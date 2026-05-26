@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Trading Simulator - Ultimate Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-base: #0f172a; --bg-panel: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --color-buy: #10b981; --color-sell: #ef4444; --color-primary: #3b82f6; --color-warning: #f59e0b;
+            --border: #334155;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 0; }
+        
+        /* Layout & Panels */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .hidden { display: none !important; }
+        .panel { background: var(--bg-panel); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        /* Typography & Colors */
+        h2, h3 { margin: 0; }
+        .text-buy { color: var(--color-buy); } .text-sell { color: var(--color-sell); } .text-muted { color: var(--text-muted); font-size: 0.9em; }
+
+        /* Forms & Buttons */
+        input, select { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 1em; }
+        input:focus, select:focus { outline: none; border-color: var(--color-primary); }
+        button { padding: 12px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; font-size: 1em; }
+        button:hover { filter: brightness(1.2); }
+        button:disabled { filter: grayscale(1); cursor: not-allowed; opacity: 0.7; }
+        
+        .btn-buy { background-color: var(--color-buy); } .btn-sell { background-color: var(--color-sell); } 
+        .btn-primary { background-color: var(--color-primary); } .btn-withdraw { background-color: #8b5cf6; width: 100%; margin-top: 5px; }
+
+        /* Tables & Header */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-weight: 500; }
+        header { background: var(--bg-panel); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        
+        /* Toasts & Login Screen */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: var(--bg-panel); padding: 15px; border-radius: 8px; border-left: 5px solid var(--color-primary); animation: slideIn 0.3s ease-out; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #0f172a, #1e293b); }
+        .login-box { background: var(--bg-panel); padding: 40px; border-radius: 12px; width: 320px; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2 style="margin-bottom: 5px;">Trading Simulator</h2>
+            <p class="text-muted" style="margin-bottom: 25px;">พิมพ์ <b>admin</b> เพื่อเข้าหลังบ้าน</p>
+            <input type="text" id="login-username" placeholder="ระบุ Username" onkeypress="if(event.key === 'Enter') handleLogin()">
+            <input type="password" placeholder="Password (ใส่อะไรก็ได้)" onkeypress="if(event.key === 'Enter') handleLogin()">
+            <button class="btn-primary" style="width:100%; margin-top: 15px;" onclick="handleLogin()" id="btn-login">เข้าสู่ระบบ</button>
+            <p id="login-status" class="text-muted" style="margin-top:15px; font-size:0.85em;"></p>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden">
+        <header>
+            <div>
+                <h3 style="display:inline;">ProTrader </h3>
+                <span id="role-badge" style="font-size:12px; background:var(--color-primary); padding:3px 8px; border-radius:12px; margin-left:10px;">USER</span>
+            </div>
+            <div style="display:flex; align-items:center; gap: 20px;">
+                <span>👤 <b id="display-user"></b></span>
+                <span id="nav-networth-container">Net Worth: <b class="text-buy">$<span id="display-networth">0.00</span></b></span>
+                <button style="background:#475569; padding: 8px 15px;" onclick="location.reload()">Logout</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <div id="user-dashboard" class="grid-2 hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>BTC / USD</h2>
+                        <h2 id="current-price-display" style="font-family:monospace;">$100.00</h2>
+                    </div>
+                    <canvas id="priceChart" height="110"></canvas>
+                    
+                    <div class="grid-2" style="margin-top: 25px; gap: 15px;">
+                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                            <p style="margin:0 0 5px 0;" class="text-muted">เงินสดที่มี (USD)</p>
+                            <h3 style="margin:0; color:var(--color-buy);">$<span id="wallet-usd">10,000.00</span></h3>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                            <p style="margin:0 0 5px 0;" class="text-muted">หุ้นที่ถือครอง (BTC)</p>
+                            <h3 style="margin:0; color:#f59e0b;"><span id="wallet-btc">0.0000</span> ₿</h3>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <label class="text-muted">ระบุจำนวนหุ้น (Units)</label>
+                            <small class="text-muted" id="fee-display">Trading Fee: 0.1%</small>
+                        </div>
+                        <input type="number" id="trade-amount" value="1" min="0.01" step="0.01">
+                        <div style="display:flex; gap:10px; margin-top: 10px;">
+                            <button class="btn-buy" style="flex:1;" onclick="executeTrade('BUY')">BUY (ซื้อ)</button>
+                            <button class="btn-sell" style="flex:1;" onclick="executeTrade('SELL')">SELL (ขาย)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel">
+                        <h3 style="margin-bottom: 15px;">Withdraw (ถอนเงิน)</h3>
+                        <p class="text-muted" style="margin-bottom: 10px;">ถอนได้สูงสุด: $<span id="withdraw-available">0.00</span></p>
+                        <input type="number" id="withdraw-amount" placeholder="ระบุจำนวน USD ที่ต้องการถอน" min="1">
+                        <button class="btn-withdraw" id="btn-withdraw" onclick="withdraw()">ถอนเข้าบัญชี (แจ้งเตือน Telegram)</button>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Trade History</h3>
+                        <div style="max-height: 230px; overflow-y: auto; margin-top: 10px;">
+                            <table id="history-table">
+                                <tr><th>Action</th><th>Price</th><th>Time</th></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin-dashboard" class="hidden">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>User Management</h3>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead><tr><th>User</th><th>USD Balance</th><th>BTC Holdings</th></tr></thead>
+                                <tbody id="admin-users-table">
+                                    <tr><td colspan="3" class="text-muted" style="text-align:center;">กำลังรันในโหมดจำลอง (Offline) ไม่สามารถดูผู้ใช้อื่นได้</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="panel" style="border-left: 4px solid var(--color-warning);">
+                            <h3 style="margin-bottom: 15px;">Market Control (God Mode)</h3>
+                            <div>
+                                <label class="text-muted">ตั้งราคาหุ้นบังคับ (Force Price $):</label>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="number" id="admin-force-price" value="100">
+                                    <button class="btn-primary" style="width: auto;" onclick="setForcePrice()">ตั้งค่า</button>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <label class="text-muted">ทิศทางตลาด (Market Trend):</label>
+                                <select onchange="updateSysConfig('trend', this.value)">
+                                    <option value="sideway">Sideway (แกว่งตัวปกติ)</option>
+                                    <option value="up">Uptrend (บังคับขึ้น)</option>
+                                    <option value="down">Downtrend (บังคับลง)</option>
+                                </select>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <label class="text-muted">ความผันผวน (Volatility):</label>
+                                <select onchange="updateSysConfig('volatility', this.value)">
+                                    <option value="low">Low (ช้าๆ)</option>
+                                    <option value="high">High (เหวี่ยงแรง)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="panel">
+                            <h3>System Config</h3>
+                            <div style="margin-top: 15px;">
+                                <label class="text-muted">ค่าธรรมเนียมเทรด (Trading Fee %):</label>
+                                <input type="number" value="0.1" step="0.1" onchange="updateSysConfig('fee', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. CONFIG & SYSTEM STATE
+        // ==========================================
+        const TG_TOKEN = '8829852624:AAFYg-pOXh_Ipe1UFPYIfQBKfi-1RRenv64';
+        const TG_CHAT_ID = '8033387742';
+
+        // 🌟 แก้ไขตรงนี้: เปลี่ยนชื่อตัวแปรเป็น supabaseClient เพื่อไม่ให้ชนกับ Library
+        let supabaseClient = null; 
+        
+        let isDbConnected = false;
+        let currentUser = null;
+        let currentPrice = 100.00;
+        let priceHistory = Array(30).fill(100);
+        let chartInst = null;
+        let engineInterval = null;
+        
+        let sysConfig = { trend: 'sideway', volatility: 'low', fee: 0.1 };
+
+        // ==========================================
+        // 2. UTILS & UI
+        // ==========================================
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderLeftColor = type === 'error' ? 'var(--color-sell)' : (type === 'success' ? 'var(--color-buy)' : 'var(--color-primary)');
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function switchView(view) {
+            ['login-screen', 'app-screen', 'user-dashboard', 'admin-dashboard'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(view).classList.remove('hidden');
+            if (view !== 'login-screen') document.getElementById('app-screen').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 3. BULLETPROOF LOGIN SYSTEM
+        // ==========================================
+        async function handleLogin() {
+            const usernameInput = document.getElementById('login-username').value.trim();
+            const statusText = document.getElementById('login-status');
+            const btn = document.getElementById('btn-login');
+            
+            if(!usernameInput) {
+                showToast('กรุณากรอก Username', 'error');
+                return;
+            }
+
+            const role = usernameInput.toLowerCase() === 'admin' ? 'admin' : 'user';
+            btn.disabled = true;
+            btn.innerText = 'กำลังเชื่อมต่อ...';
+            statusText.innerText = 'กำลังตรวจสอบฐานข้อมูล...';
+
+            try {
+                if (typeof window.supabase === 'undefined') throw new Error("Library ไม่โหลด");
+
+                // 🌟 ใช้ supabaseClient แทน
+                supabaseClient = window.supabase.createClient('https://gakuyawvuxalcyyvfsrl.supabase.co', 'sb_publishable_-WRBjvCVw3i1W4W7DDm2jA_aXxQsWLF');
+                
+                const { data, error } = await supabaseClient.from('profiles').select('*').eq('username', usernameInput).maybeSingle();
+                
+                if (error) throw error;
+
+                isDbConnected = true;
+                if (data) {
+                    currentUser = { ...data, balance_usd: data.balance || 10000, balance_btc: data.btc || 0 };
+                } else {
+                    currentUser = { id: 'user-'+Date.now(), username: usernameInput, role: role, balance_usd: 10000, balance_btc: 0 };
+                }
+            } catch (err) {
+                console.warn("เข้าสู่โหมด Offline (Mock Mode) เนื่องจาก:", err.message || err);
+                isDbConnected = false;
+                currentUser = { id: 'mock-'+Date.now(), username: usernameInput, role: role, balance_usd: 10000, balance_btc: 0 };
+                showToast('เชื่อมต่อฐานข้อมูลล้มเหลว รันในโหมดจำลอง (Offline)', 'warning');
+            }
+
+            document.getElementById('display-user').innerText = currentUser.username;
+            const badge = document.getElementById('role-badge');
+            badge.innerText = currentUser.role.toUpperCase();
+            badge.style.background = currentUser.role === 'admin' ? 'var(--color-sell)' : 'var(--color-primary)';
+            
+            if(currentUser.role === 'admin') document.getElementById('nav-networth-container').classList.add('hidden');
+
+            startMarketEngine();
+
+            if (currentUser.role === 'admin') {
+                switchView('admin-dashboard');
+            } else {
+                switchView('user-dashboard');
+                updateUserUI();
+            }
+            
+            showToast(`ยินดีต้อนรับเข้าสู่ระบบ <b>${currentUser.username}</b>`, 'success');
+        }
+
+        // ==========================================
+        // 4. TRADING ENGINE
+        // ==========================================
+        function updateUserUI() {
+            if(!currentUser || currentUser.role !== 'user') return;
+            const usd = currentUser.balance_usd;
+            const btc = currentUser.balance_btc;
+            const netWorth = usd + (btc * currentPrice);
+
+            document.getElementById('wallet-usd').innerText = usd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('wallet-btc').innerText = btc.toFixed(4);
+            document.getElementById('withdraw-available').innerText = usd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            document.getElementById('display-networth').innerText = netWorth.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+
+        function startMarketEngine() {
+            if(!chartInst && typeof Chart !== 'undefined' && document.getElementById('priceChart')) {
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                chartInst = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: Array(30).fill(''), datasets: [{ data: priceHistory, borderColor: '#3b82f6', tension: 0.1, pointRadius: 0, borderWidth: 2 }] },
+                    options: { responsive: true, scales: { x: { display: false } }, animation: { duration: 0 }, plugins: { legend: { display: false } } }
+                });
+            }
+
+            if(engineInterval) clearInterval(engineInterval);
+            engineInterval = setInterval(() => {
+                let vol = sysConfig.volatility === 'high' ? 6 : 1.5;
+                let change = (Math.random() - 0.5) * vol;
+                
+                if (sysConfig.trend === 'up') change += (Math.random() * (vol * 0.8));
+                if (sysConfig.trend === 'down') change -= (Math.random() * (vol * 0.8));
+
+                currentPrice = Math.max(1, currentPrice + change); 
+                
+                const disp = document.getElementById('current-price-display');
+                if(disp) {
+                    disp.innerText = `$${currentPrice.toFixed(2)}`;
+                    disp.className = change >= 0 ? 'text-buy' : 'text-sell';
+                }
+
+                priceHistory.push(currentPrice);
+                priceHistory.shift();
+                
+                if(chartInst) {
+                    chartInst.data.datasets[0].borderColor = change >= 0 ? 'var(--color-buy)' : 'var(--color-sell)';
+                    chartInst.update();
+                }
+
+                updateUserUI();
+            }, 1000);
+        }
+
+        async function executeTrade(type) {
+            const amount = parseFloat(document.getElementById('trade-amount').value);
+            if(isNaN(amount) || amount <= 0) return showToast('กรุณาระบุจำนวนหุ้นให้ถูกต้อง', 'error');
+
+            const valueUSD = amount * currentPrice;
+            const fee = valueUSD * (sysConfig.fee / 100);
+
+            if(type === 'BUY') {
+                const totalCost = valueUSD + fee;
+                if(totalCost > currentUser.balance_usd) return showToast('ยอดเงิน USD ไม่เพียงพอ', 'error');
+                
+                currentUser.balance_usd -= totalCost;
+                currentUser.balance_btc += amount;
+            } else {
+                if(amount > currentUser.balance_btc) return showToast('จำนวน BTC ไม่พอให้ขาย', 'error');
+                
+          
