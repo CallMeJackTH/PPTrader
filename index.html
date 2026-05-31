@@ -1,350 +1,711 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Trading Simulator</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <style>
-        :root {
-            --bg-base: #0f172a; --bg-panel: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
-            --color-buy: #10b981; --color-sell: #ef4444; --color-primary: #3b82f6; --color-warning: #f59e0b;
-            --border: #334155;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<title>RBX Trader</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0f1e;--panel:#111827;--panel2:#1a2236;--border:#1e2d45;
+  --green:#00d68f;--red:#ff4d6a;--blue:#3d8ef8;--gold:#f5a623;
+  --text:#e8edf5;--muted:#64748b;--muted2:#94a3b8;
+  --radius:14px;--radius-sm:8px;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
 
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 0; }
-        
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
-        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
-        .hidden { display: none !important; }
-        .panel { background: var(--bg-panel); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
-        h2, h3 { margin: 0; }
-        .text-buy { color: var(--color-buy); } .text-sell { color: var(--color-sell); } .text-muted { color: var(--text-muted); font-size: 0.9em; }
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;}
+.login-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;}
+.login-logo{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#3d8ef8,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;}
+.login-card h2{font-size:1.5rem;font-weight:600;margin-bottom:.3rem;}
+.login-sub{color:var(--muted2);font-size:.9rem;margin-bottom:1.8rem;}
+.inp{width:100%;padding:.75rem 1rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.95rem;margin-bottom:.75rem;outline:none;transition:border .2s;}
+.inp:focus{border-color:var(--blue);}
+.btn-login{width:100%;padding:.8rem;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;font-weight:600;cursor:pointer;margin-top:.5rem;}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;}
 
-        input, select { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 1em; }
-        input:focus, select:focus { outline: none; border-color: var(--color-primary); }
-        button { padding: 12px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; font-size: 1em; }
-        button:disabled { filter: grayscale(1); cursor: not-allowed; opacity: 0.7; }
-        
-        .btn-buy { background-color: var(--color-buy); } .btn-sell { background-color: var(--color-sell); } 
-        .btn-primary { background-color: var(--color-primary); } .btn-withdraw { background-color: #8b5cf6; width: 100%; margin-top: 5px; }
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:.85rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.logo-small{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3d8ef8,#7c3aed);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand{font-weight:700;font-size:1rem;}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;}
+.badge-user{background:rgba(61,142,248,.15);color:#3d8ef8;border:1px solid rgba(61,142,248,.3);}
+.badge-admin{background:rgba(255,77,106,.15);color:#ff4d6a;border:1px solid rgba(255,77,106,.3);}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.networth-chip{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:.3rem .9rem;font-size:.85rem;}
+.networth-val{color:var(--green);font-weight:700;}
+.btn-sm{padding:.4rem .85rem;background:var(--panel2);border:1px solid var(--border);color:var(--muted2);border-radius:var(--radius-sm);font-size:.82rem;cursor:pointer;font-weight:500;display:flex;align-items:center;gap:5px;}
+.btn-sm:hover{background:var(--border);color:var(--text);}
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); }
-        th { color: var(--text-muted); font-weight: 500; }
-        header { background: var(--bg-panel); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: var(--bg-panel); padding: 15px; border-radius: 8px; border-left: 5px solid var(--color-primary); animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #0f172a, #1e293b); }
-        .login-box { background: var(--bg-panel); padding: 40px; border-radius: 12px; width: 320px; border: 1px solid var(--border); text-align: center; }
-    </style>
+.main{flex:1;padding:1rem;max-width:1280px;width:100%;margin:0 auto;}
+.grid2{display:grid;grid-template-columns:1fr 350px;gap:1rem;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.col-right{display:flex;flex-direction:column;gap:1rem;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;}
+
+.price-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px;}
+.pair-label{display:flex;align-items:center;gap:8px;}
+.pair-icon{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#f97316);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;}
+.pair-name{font-size:1.1rem;font-weight:700;}
+.pair-sub{font-size:.78rem;color:var(--muted2);}
+.price-big{font-size:2rem;font-weight:700;font-family:monospace;letter-spacing:-1px;}
+.price-change{font-size:.8rem;padding:2px 8px;border-radius:20px;font-weight:600;}
+.up{color:var(--green)}.down{color:var(--red)}
+.up-bg{background:rgba(0,214,143,.12);color:var(--green);}
+.down-bg{background:rgba(255,77,106,.12);color:var(--red);}
+.chart-wrap{position:relative;height:180px;margin-bottom:1.2rem;}
+
+.wallet-strip{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.2rem;}
+.wallet-card{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1rem;}
+.wallet-label{font-size:.75rem;color:var(--muted2);margin-bottom:.25rem;display:flex;align-items:center;gap:5px;}
+.wallet-val{font-size:1.25rem;font-weight:700;}
+.wallet-val.thb{color:var(--gold);}
+.wallet-val.rbx{color:var(--blue);}
+
+.trade-label{font-size:.82rem;color:var(--muted2);margin-bottom:.6rem;display:flex;justify-content:space-between;}
+.amount-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:.75rem;}
+.amt-btn{padding:.55rem .2rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted2);font-size:.82rem;font-weight:600;cursor:pointer;text-align:center;transition:.2s;user-select:none;}
+.amt-btn:hover{border-color:var(--blue);color:var(--text);}
+.amt-btn.active{background:rgba(61,142,248,.15);border-color:var(--blue);color:var(--blue);}
+.amt-btn.allin{border-color:var(--gold);color:var(--gold);}
+.amt-btn.allin.active{background:rgba(245,166,35,.12);}
+.trade-btns{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem;}
+.btn-buy{padding:.85rem;background:var(--green);border:none;color:#000;font-size:.95rem;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-buy:hover{filter:brightness(1.1);}
+.btn-sell{padding:.85rem;background:var(--red);border:none;color:#fff;font-size:.95rem;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-sell:hover{filter:brightness(1.1);}
+.fee-note{font-size:.75rem;color:var(--muted);margin-top:.5rem;text-align:center;}
+
+.withdraw-inp{width:100%;padding:.7rem 1rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.95rem;outline:none;margin-bottom:.5rem;}
+.withdraw-inp:focus{border-color:var(--gold);}
+.withdraw-max{font-size:.78rem;color:var(--muted2);margin-bottom:.7rem;display:flex;justify-content:space-between;}
+.withdraw-max span{color:var(--blue);cursor:pointer;font-weight:600;}
+.btn-withdraw{width:100%;padding:.8rem;background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;border:none;border-radius:var(--radius-sm);font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-withdraw:hover{filter:brightness(1.1);}
+.btn-withdraw:disabled{opacity:.4;cursor:not-allowed;}
+.rbx-avail{background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:var(--radius-sm);padding:.6rem .9rem;font-size:.82rem;margin-bottom:.75rem;color:var(--muted2);}
+.rbx-avail b{color:var(--gold);}
+
+.history-list{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem;}
+.history-list::-webkit-scrollbar{width:4px;}
+.history-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:.5rem .7rem;background:var(--panel2);border-radius:var(--radius-sm);font-size:.82rem;}
+.hist-type{font-weight:700;display:flex;align-items:center;gap:4px;}
+.hist-detail{color:var(--muted2);text-align:right;}
+
+/* ADMIN */
+.admin-grid{display:grid;grid-template-columns:1fr 360px;gap:1rem;}
+@media(max-width:900px){.admin-grid{grid-template-columns:1fr;}}
+.trend-btns{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem;}
+.trend-btn{padding:.65rem 1rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted2);font-size:.88rem;font-weight:500;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;}
+.trend-btn:hover{border-color:var(--blue);color:var(--text);}
+.trend-btn.active{background:rgba(245,166,35,.12);border-color:var(--gold);color:var(--gold);}
+.force-price-row{display:flex;gap:.5rem;margin-top:.5rem;}
+.force-inp{flex:1;padding:.65rem .8rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.9rem;outline:none;}
+.force-inp:focus{border-color:var(--blue);}
+.btn-set{padding:.65rem 1rem;background:var(--blue);border:none;color:#fff;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:.9rem;white-space:nowrap;}
+
+.admin-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+.admin-table th{color:var(--muted2);text-align:left;padding:.6rem .8rem;border-bottom:1px solid var(--border);font-weight:500;}
+.admin-table td{padding:.6rem .8rem;border-bottom:1px solid rgba(30,45,69,.5);vertical-align:middle;}
+.admin-inp{width:100px;padding:.4rem .6rem;background:var(--panel2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.82rem;outline:none;}
+.btn-save{padding:.4rem .8rem;background:var(--blue);border:none;color:#fff;border-radius:5px;font-size:.78rem;font-weight:600;cursor:pointer;}
+
+/* ADJUST MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal-box{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:420px;}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;}
+.modal-inp{width:100%;padding:.65rem .8rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.9rem;outline:none;}
+.modal-inp:focus{border-color:var(--gold);}
+.modal-btns{display:flex;gap:.6rem;margin-top:1rem;}
+.btn-confirm{flex:1;padding:.75rem;background:var(--green);border:none;color:#000;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;font-size:.9rem;}
+.btn-cancel{padding:.75rem 1.2rem;background:var(--panel2);border:1px solid var(--border);color:var(--muted2);border-radius:var(--radius-sm);cursor:pointer;font-size:.9rem;}
+.adj-tabs{display:flex;gap:.4rem;margin-bottom:1rem;}
+.adj-tab{flex:1;padding:.5rem;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--muted2);font-size:.82rem;font-weight:600;cursor:pointer;text-align:center;}
+.adj-tab.active{background:rgba(61,142,248,.15);border-color:var(--blue);color:var(--blue);}
+.adj-presets{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem;}
+.adj-preset{padding:.35rem .7rem;background:var(--panel2);border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted2);cursor:pointer;}
+.adj-preset:hover{border-color:var(--gold);color:var(--gold);}
+
+#toasts{position:fixed;bottom:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none;max-width:320px;}
+.toast{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem 1rem;font-size:.85rem;animation:slideup .3s ease;pointer-events:auto;display:flex;align-items:flex-start;gap:8px;}
+.toast-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;}
+.toast.success .toast-icon{background:rgba(0,214,143,.2);color:var(--green);}
+.toast.error .toast-icon{background:rgba(255,77,106,.2);color:var(--red);}
+.toast.warn .toast-icon{background:rgba(245,166,35,.2);color:var(--gold);}
+@keyframes slideup{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.hidden{display:none!important;}
+.card-title{font-size:.9rem;font-weight:600;margin-bottom:.9rem;display:flex;align-items:center;gap:6px;color:var(--muted2);}
+.divider{border:none;border-top:1px solid var(--border);margin:.9rem 0;}
+.sound-row{display:flex;align-items:center;gap:8px;margin-top:.5rem;font-size:.8rem;color:var(--muted2);}
+.sound-toggle{position:relative;width:36px;height:20px;background:var(--panel2);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:.2s;flex-shrink:0;}
+.sound-toggle.on{background:var(--green);border-color:var(--green);}
+.sound-toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;}
+.sound-toggle.on::after{left:18px;}
+</style>
 </head>
 <body>
+<div id="toasts"></div>
 
-    <div id="toast-container"></div>
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo"><i class="ti ti-chart-candle" style="color:#fff;font-size:26px;"></i></div>
+    <h2>RBX Trader</h2>
+    <p class="login-sub">ระบบซื้อขาย <strong>RBX / THB</strong></p>
+    <input class="inp" id="inp-user" type="text" placeholder="Username" onkeypress="if(event.key==='Enter')doLogin()">
+    <input class="inp" id="inp-pass" type="password" placeholder="Password" onkeypress="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" id="btn-login" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:1rem;" id="login-msg"></p>
+  </div>
+</div>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="margin-bottom: 5px;">Trading Simulator</h2>
-            <p class="text-muted" style="margin-bottom: 25px;">พิมพ์ <b>admin</b> เพื่อเข้าหลังบ้าน</p>
-            <input type="text" id="login-username" placeholder="ระบุ Username">
-            <button class="btn-primary" style="width:100%; margin-top: 15px;" onclick="handleLogin()" id="btn-login">เข้าสู่ระบบ</button>
-            <p id="login-status" class="text-muted" style="margin-top:15px; font-size:0.85em;"></p>
-        </div>
+<!-- APP -->
+<div id="app" class="hidden" style="display:flex;flex-direction:column;min-height:100vh;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-small"><i class="ti ti-chart-candle" style="color:#fff;font-size:15px;"></i></div>
+      <div>
+        <span class="brand">RBX Trader</span>
+        <span class="badge badge-user" id="role-badge" style="margin-left:7px;">USER</span>
+      </div>
     </div>
-
-    <div id="app-screen" class="hidden">
-        <header>
-            <div>
-                <h3 style="display:inline;">ProTrader</h3>
-                <span id="role-badge" style="font-size:12px; background:var(--color-primary); padding:3px 8px; border-radius:12px; margin-left:10px;">USER</span>
-            </div>
-            <div style="display:flex; align-items:center; gap: 20px;">
-                <span>👤 <b id="display-user"></b></span>
-                <span id="nav-networth-container">Net Worth: <b class="text-buy">$<span id="display-networth">0.00</span></b></span>
-                <button style="background:#475569; padding: 8px 15px;" onclick="location.reload()">Logout</button>
-            </div>
-        </header>
-
-        <div class="container">
-            <div id="user-dashboard" class="grid-2 hidden">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>BTC / USD</h2>
-                        <h2 id="current-price-display" style="font-family:monospace;">$100.00</h2>
-                    </div>
-                    <canvas id="priceChart" height="110"></canvas>
-                    
-                    <div class="grid-2" style="margin-top: 25px; gap: 15px;">
-                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                            <p style="margin:0 0 5px 0;" class="text-muted">เงินสดที่มี (USD)</p>
-                            <h3 style="margin:0; color:var(--color-buy);">$<span id="wallet-usd">10,000.00</span></h3>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                            <p style="margin:0 0 5px 0;" class="text-muted">หุ้นที่ถือครอง (BTC)</p>
-                            <h3 style="margin:0; color:#f59e0b;"><span id="wallet-btc">0.0000</span> ₿</h3>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                            <label class="text-muted">ระบุจำนวนหุ้น (Units)</label>
-                            <small class="text-muted" id="fee-display">Trading Fee: 0.1%</small>
-                        </div>
-                        <input type="number" id="trade-amount" value="1" min="0.01" step="0.01">
-                        <div style="display:flex; gap:10px; margin-top: 10px;">
-                            <button class="btn-buy" style="flex:1;" onclick="executeTrade('BUY')">BUY (ซื้อ)</button>
-                            <button class="btn-sell" style="flex:1;" onclick="executeTrade('SELL')">SELL (ขาย)</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="panel">
-                        <h3 style="margin-bottom: 15px;">Withdraw (ถอนเงิน)</h3>
-                        <input type="number" id="withdraw-amount" placeholder="ระบุจำนวน USD ที่ต้องการถอน" min="1">
-                        <button class="btn-withdraw" id="btn-withdraw" onclick="withdraw()">ถอนเข้าบัญชี (Telegram)</button>
-                    </div>
-                    <div class="panel">
-                        <h3>Trade History</h3>
-                        <div style="max-height: 230px; overflow-y: auto; margin-top: 10px;">
-                            <table id="history-table">
-                                <tr><th>Action</th><th>Price</th><th>Time</th></tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="admin-dashboard" class="hidden">
-                <div class="grid-2">
-                    <div class="panel">
-                        <div class="panel-header"><h3>User Management</h3></div>
-                        <div style="overflow-x: auto;">
-                            <table>
-                                <thead><tr><th>User</th><th>USD Balance</th><th>BTC Holdings</th></tr></thead>
-                                <tbody id="admin-users-table">
-                                    <tr><td colspan="3" class="text-muted" style="text-align:center;" id="admin-status-text">กำลังโหลดข้อมูล...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="panel" style="border-left: 4px solid var(--color-warning);">
-                            <h3 style="margin-bottom: 15px;">Market Control</h3>
-                            <div>
-                                <label class="text-muted">ตั้งราคาหุ้นบังคับ (Force Price $):</label>
-                                <div style="display:flex; gap:10px;">
-                                    <input type="number" id="admin-force-price" value="100">
-                                    <button class="btn-primary" style="width: auto;" onclick="setForcePrice()">ตั้งค่า</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="topbar-right">
+      <div class="networth-chip" id="networth-chip">มูลค่ารวม: <span class="networth-val" id="disp-networth">฿0</span></div>
+      <span style="font-size:.85rem;color:var(--muted2);">👤 <b id="disp-user"></b></span>
+      <button class="btn-sm" onclick="doLogout()"><i class="ti ti-logout"></i> ออก</button>
     </div>
+  </div>
 
-    <script>
-        const TG_TOKEN = '8829852624:AAFYg-pOXh_Ipe1UFPYIfQBKfi-1RRenv64';
-        const TG_CHAT_ID = '8033387742';
-        const SUPABASE_URL = 'https://gakuyawvuxalcyyvfsrl.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_-WRBjvCVw3i1W4W7DDm2jA_aXxQsWLF';
+  <!-- USER DASH -->
+  <div class="main" id="user-dash">
+    <div class="grid2">
+      <div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="price-header">
+            <div class="pair-label">
+              <div class="pair-icon">R</div>
+              <div>
+                <div class="pair-name">RBX / THB</div>
+                <div class="pair-sub">Roblox Coin · เรียลไทม์</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div class="price-big up" id="disp-price">฿100.00</div>
+              <span class="price-change up-bg" id="disp-change">+0.00%</span>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+          <div class="wallet-strip">
+            <div class="wallet-card">
+              <div class="wallet-label"><i class="ti ti-currency-baht" style="font-size:14px;"></i>เงินบาท (THB)</div>
+              <div class="wallet-val thb">฿<span id="disp-thb">10,000.00</span></div>
+            </div>
+            <div class="wallet-card">
+              <div class="wallet-label"><i class="ti ti-coin" style="font-size:14px;"></i>เหรียญ (RBX)</div>
+              <div class="wallet-val rbx"><span id="disp-rbx">0.0000</span> RBX</div>
+            </div>
+          </div>
+          <div class="trade-label"><span>เลือกจำนวน RBX</span><span style="color:var(--muted);">ค่าธรรมเนียม 0.1%</span></div>
+          <div class="amount-grid">
+            <div class="amt-btn active" onclick="selectAmt(5,this)">5</div>
+            <div class="amt-btn" onclick="selectAmt(10,this)">10</div>
+            <div class="amt-btn" onclick="selectAmt(15,this)">15</div>
+            <div class="amt-btn" onclick="selectAmt(20,this)">20</div>
+            <div class="amt-btn" onclick="selectAmt(40,this)">40</div>
+            <div class="amt-btn" onclick="selectAmt(60,this)">60</div>
+            <div class="amt-btn" onclick="selectAmt(100,this)">100</div>
+            <div class="amt-btn allin" onclick="selectAmt('all',this)">All in</div>
+          </div>
+          <div id="trade-preview" style="background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem 1rem;font-size:.82rem;color:var(--muted2);margin-bottom:.5rem;">เลือกจำนวนเพื่อดูราคา</div>
+          <div class="trade-btns">
+            <button class="btn-buy" onclick="doTrade('BUY')"><i class="ti ti-trending-up"></i> ซื้อ (BUY)</button>
+            <button class="btn-sell" onclick="doTrade('SELL')"><i class="ti ti-trending-down"></i> ขาย (SELL)</button>
+          </div>
+          <div class="fee-note">ราคาอัปเดตทุก 1.5 วินาที</div>
+          <div class="sound-row">
+            <div class="sound-toggle on" id="sound-toggle" onclick="toggleSound()"></div>
+            <span>เสียงแจ้งเตือน</span>
+            <span id="sound-label" style="color:var(--green);">เปิดอยู่</span>
+          </div>
+        </div>
+      </div>
 
-        let supabaseClient = null;
-        let isDbConnected = false;
-        let currentUser = null;
-        let currentPrice = 100.00;
-        let priceHistory = Array(30).fill(100);
-        let chartInst = null;
-        let engineInterval = null;
-        let sysConfig = { trend: 'sideway', volatility: 'low', fee: 0.1 };
+      <div class="col-right">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-coin" style="color:var(--gold);"></i>ถอน RBX (Withdraw)</div>
+          <div class="rbx-avail">RBX ที่มี: <b id="withdraw-rbx-avail">0.0000 RBX</b></div>
+          <input class="withdraw-inp" id="inp-withdraw" type="number" placeholder="จำนวน RBX ที่ต้องการถอน" min="0.0001" step="0.0001">
+          <div class="withdraw-max">
+            <span style="color:var(--muted);">ระบุจำนวน RBX</span>
+            <span onclick="withdrawAll()">ถอนทั้งหมด</span>
+          </div>
+          <button class="btn-withdraw" id="btn-withdraw" onclick="doWithdraw()">
+            <i class="ti ti-brand-telegram"></i> แจ้งถอน RBX ผ่าน Telegram
+          </button>
+        </div>
+        <div class="card" style="flex:1;">
+          <div class="card-title"><i class="ti ti-history"></i>ประวัติการซื้อขาย</div>
+          <div class="history-list" id="hist-list">
+            <div style="text-align:center;color:var(--muted);padding:1rem;font-size:.82rem;">ยังไม่มีประวัติ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        function showToast(msg, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.style.borderLeftColor = type === 'error' ? 'var(--color-sell)' : (type === 'success' ? 'var(--color-buy)' : 'var(--color-warning)');
-            toast.innerHTML = msg;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        }
+  <!-- ADMIN DASH -->
+  <div class="main hidden" id="admin-dash">
+    <div class="admin-grid">
+      <!-- LEFT: USER TABLE -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <div class="card-title" style="margin:0;"><i class="ti ti-users"></i>จัดการผู้ใช้งาน</div>
+          <button class="btn-sm" onclick="loadUsers()"><i class="ti ti-refresh"></i> รีเฟรช</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ผู้ใช้</th>
+                <th>ยอด THB</th>
+                <th>ยอด RBX</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="admin-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1rem;">กำลังโหลด...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        function switchView(view) {
-            ['login-screen', 'app-screen', 'user-dashboard', 'admin-dashboard'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(view).classList.remove('hidden');
-            if (view !== 'login-screen') document.getElementById('app-screen').classList.remove('hidden');
-        }
+      <!-- RIGHT: CONTROLS -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="card" style="border-left:3px solid var(--gold);border-radius:0 var(--radius) var(--radius) 0;">
+          <div class="card-title"><i class="ti ti-adjustments" style="color:var(--gold);"></i>ควบคุมกราฟ</div>
+          <div class="trend-btns">
+            <button class="trend-btn" id="trend-low" onclick="setTrend('low',this)"><i class="ti ti-trending-up"></i> ขึ้นน้อย (+0.2)</button>
+            <button class="trend-btn" id="trend-mid" onclick="setTrend('mid',this)"><i class="ti ti-rocket"></i> ขึ้นปานกลาง (+1.5)</button>
+            <button class="trend-btn" id="trend-max" onclick="setTrend('max',this)"><i class="ti ti-stars"></i> พุ่งแรง (+5.0)</button>
+            <button class="trend-btn active" id="trend-normal" onclick="setTrend('normal',this)"><i class="ti ti-scale"></i> ตลาดปกติ (สุ่ม)</button>
+          </div>
+          <hr class="divider">
+          <div class="card-title"><i class="ti ti-lock"></i>ล็อคราคา ฿</div>
+          <div class="force-price-row">
+            <input class="force-inp" type="number" id="inp-force" value="100">
+            <button class="btn-set" onclick="forcePrice()">ตั้งค่า</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        async function handleLogin() {
-            const usernameInput = document.getElementById('login-username').value.trim();
-            const btn = document.getElementById('btn-login');
-            const statusText = document.getElementById('login-status');
-            
-            if(!usernameInput) return showToast('กรุณากรอก Username', 'error');
+<!-- ADJUST MODAL -->
+<div class="modal-bg hidden" id="adj-modal">
+  <div class="modal-box">
+    <div class="modal-title"><i class="ti ti-wallet" style="color:var(--gold);"></i>ปรับยอดเงิน: <span id="adj-username" style="color:var(--blue);"></span></div>
+    <div class="adj-tabs">
+      <div class="adj-tab active" id="tab-thb" onclick="switchAdjTab('thb')"><i class="ti ti-currency-baht"></i> THB</div>
+      <div class="adj-tab" id="tab-rbx" onclick="switchAdjTab('rbx')"><i class="ti ti-coin"></i> RBX</div>
+    </div>
+    <div id="adj-thb-section">
+      <div style="font-size:.82rem;color:var(--muted2);margin-bottom:.4rem;">ยอด THB ปัจจุบัน: <b id="cur-thb" style="color:var(--gold);"></b></div>
+      <div class="adj-presets">
+        <div class="adj-preset" onclick="adjPreset('thb',1000)">+฿1,000</div>
+        <div class="adj-preset" onclick="adjPreset('thb',5000)">+฿5,000</div>
+        <div class="adj-preset" onclick="adjPreset('thb',10000)">+฿10,000</div>
+        <div class="adj-preset" onclick="adjPreset('thb',50000)">+฿50,000</div>
+        <div class="adj-preset" onclick="adjPreset('thb',-1000)">-฿1,000</div>
+        <div class="adj-preset" onclick="adjPreset('thb',-5000)">-฿5,000</div>
+      </div>
+      <label style="font-size:.8rem;color:var(--muted2);">ตั้งยอด THB ใหม่ (หรือเพิ่ม/ลด ใส่ติดลบได้)</label>
+      <div class="modal-row" style="margin-top:.4rem;">
+        <input class="modal-inp" type="number" id="adj-thb-val" placeholder="ยอดใหม่ ฿">
+        <input class="modal-inp" type="number" id="adj-thb-add" placeholder="เพิ่ม/ลด ฿">
+      </div>
+    </div>
+    <div id="adj-rbx-section" class="hidden">
+      <div style="font-size:.82rem;color:var(--muted2);margin-bottom:.4rem;">ยอด RBX ปัจจุบัน: <b id="cur-rbx" style="color:var(--blue);"></b></div>
+      <div class="adj-presets">
+        <div class="adj-preset" onclick="adjPreset('rbx',10)">+10 RBX</div>
+        <div class="adj-preset" onclick="adjPreset('rbx',50)">+50 RBX</div>
+        <div class="adj-preset" onclick="adjPreset('rbx',100)">+100 RBX</div>
+        <div class="adj-preset" onclick="adjPreset('rbx',500)">+500 RBX</div>
+        <div class="adj-preset" onclick="adjPreset('rbx',-10)">-10 RBX</div>
+        <div class="adj-preset" onclick="adjPreset('rbx',-50)">-50 RBX</div>
+      </div>
+      <label style="font-size:.8rem;color:var(--muted2);">ตั้งยอด RBX ใหม่ (หรือเพิ่ม/ลด)</label>
+      <div class="modal-row" style="margin-top:.4rem;">
+        <input class="modal-inp" type="number" id="adj-rbx-val" placeholder="ยอดใหม่ RBX">
+        <input class="modal-inp" type="number" id="adj-rbx-add" placeholder="เพิ่ม/ลด RBX">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAdj()">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmAdj()"><i class="ti ti-check"></i> บันทึก</button>
+    </div>
+  </div>
+</div>
 
-            const role = usernameInput.toLowerCase() === 'admin' ? 'admin' : 'user';
-            btn.disabled = true;
-            btn.innerText = 'กำลังเชื่อมต่อ...';
-            statusText.innerText = 'กำลังตรวจสอบฐานข้อมูล Supabase...';
+<script>
+const TG_TOKEN='8829852624:AAFYg-pOXh_Ipe1UFPYIfQBKfi-1RRenv64';
+const TG_CHAT_ID='8033387742';
+const SB_URL='https://gakuyawvuxalcyyvfsrl.supabase.co';
+const SB_KEY='sb_publishable_-WRBjvCVw3i1W4W7DDm2jA_aXxQsWLF';
 
-            try {
-                if (typeof window.supabase === 'undefined') throw new Error("โหลด Library ไม่สำเร็จ");
+let sb=null,online=false,user=null;
+let price=100,prevPrice=100,priceHist=Array(40).fill(100);
+let chart=null,engine=null,trend='normal';
+let selectedAmt=5;
+let soundOn=true;
+let adjTarget=null,adjTab='thb';
+let buyPriceMap={};  // track avg buy price for PnL
 
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                
-                // ลองดึงข้อมูลจากตาราง profiles
-                const { data, error } = await supabaseClient.from('profiles').select('*').eq('username', usernameInput).maybeSingle();
-                
-                if (error) {
-                    throw new Error(error.message); // ขว้าง Error ออกไปให้ catch จับ
-                }
+// ── Web Audio ──────────────────────────────────────────────
+const AC=new (window.AudioContext||window.webkitAudioContext)();
 
-                isDbConnected = true;
-                if (data) {
-                    currentUser = { ...data, balance_usd: data.balance || 10000, balance_btc: data.btc || 0 };
-                } else {
-                    currentUser = { id: 'user-'+Date.now(), username: usernameInput, role: role, balance_usd: 10000, balance_btc: 0 };
-                }
-                
-                if(currentUser.role === 'admin') {
-                    document.getElementById('admin-status-text').innerText = "เชื่อมต่อฐานข้อมูลสำเร็จ (Online Mode)";
-                }
+function playTone(freq,dur,type='sine',vol=.18){
+  const osc=AC.createOscillator();
+  const gain=AC.createGain();
+  osc.connect(gain);gain.connect(AC.destination);
+  osc.type=type;osc.frequency.setValueAtTime(freq,AC.currentTime);
+  gain.gain.setValueAtTime(vol,AC.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);
+  osc.start();osc.stop(AC.currentTime+dur);
+}
 
-            } catch (err) {
-                console.error("DB Error:", err);
-                isDbConnected = false;
-                currentUser = { id: 'mock-'+Date.now(), username: usernameInput, role: role, balance_usd: 10000, balance_btc: 0 };
-                // 🌟 ตรงนี้จะโชว์ Error จริงๆ บนหน้าจอให้เห็นเลยครับว่าทำไมถึงต่อไม่ติด
-                showToast(`<b>เข้าสู่โหมด Offline</b><br>สาเหตุ: ${err.message || err}`, 'warning');
-                
-                if(currentUser.role === 'admin') {
-                    document.getElementById('admin-status-text').innerText = "กำลังรันในโหมดจำลอง (Offline) ไม่สามารถดูผู้ใช้อื่นได้";
-                }
-            }
+function playSoundBuy(){
+  if(!soundOn)return;
+  // ซื้อ: chord ขึ้น
+  playTone(440,.12,'sine',.15);
+  setTimeout(()=>playTone(554,.12,'sine',.15),120);
+  setTimeout(()=>playTone(659,.25,'sine',.15),240);
+}
 
-            document.getElementById('display-user').innerText = currentUser.username;
-            const badge = document.getElementById('role-badge');
-            badge.innerText = currentUser.role.toUpperCase();
-            badge.style.background = currentUser.role === 'admin' ? 'var(--color-sell)' : 'var(--color-primary)';
-            if(currentUser.role === 'admin') document.getElementById('nav-networth-container').classList.add('hidden');
+function playSoundProfit(){
+  if(!soundOn)return;
+  // กำไร: ding สดใส
+  playTone(880,.08,'sine',.2);
+  setTimeout(()=>playTone(1046,.08,'sine',.2),90);
+  setTimeout(()=>playTone(1318,.3,'sine',.2),180);
+  setTimeout(()=>playTone(1568,.4,'sine',.15),300);
+}
 
-            startMarketEngine();
-            currentUser.role === 'admin' ? switchView('admin-dashboard') : switchView('user-dashboard');
-            updateUserUI();
-            
-            showToast(`ยินดีต้อนรับ <b>${currentUser.username}</b>`, 'success');
-        }
+function playSoundLoss(){
+  if(!soundOn)return;
+  // ขาดทุน: โน้ตลง + noise
+  playTone(300,.15,'sawtooth',.12);
+  setTimeout(()=>playTone(220,.15,'sawtooth',.12),160);
+  setTimeout(()=>playTone(160,.4,'sawtooth',.1),320);
+}
 
-        function updateUserUI() {
-            if(!currentUser || currentUser.role !== 'user') return;
-            const usd = currentUser.balance_usd;
-            const btc = currentUser.balance_btc;
-            const netWorth = usd + (btc * currentPrice);
+function playSoundWithdraw(){
+  if(!soundOn)return;
+  // ถอน: เหรียญหล่น
+  playTone(1200,.05,'sine',.18);
+  setTimeout(()=>playTone(900,.05,'sine',.15),60);
+  setTimeout(()=>playTone(600,.08,'sine',.12),120);
+  setTimeout(()=>playTone(400,.2,'sine',.1),200);
+}
 
-            document.getElementById('wallet-usd').innerText = usd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-            document.getElementById('wallet-btc').innerText = btc.toFixed(4);
-            document.getElementById('display-networth').innerText = netWorth.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-        }
+function toggleSound(){
+  soundOn=!soundOn;
+  const t=document.getElementById('sound-toggle');
+  const l=document.getElementById('sound-label');
+  t.className='sound-toggle'+(soundOn?' on':'');
+  l.style.color=soundOn?'var(--green)':'var(--muted)';
+  l.innerText=soundOn?'เปิดอยู่':'ปิดอยู่';
+  if(soundOn){AC.resume();playSoundBuy();}
+}
 
-        function startMarketEngine() {
-            if(!chartInst && typeof Chart !== 'undefined' && document.getElementById('priceChart')) {
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                chartInst = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: Array(30).fill(''), datasets: [{ data: priceHistory, borderColor: '#3b82f6', tension: 0.1, pointRadius: 0, borderWidth: 2 }] },
-                    options: { responsive: true, scales: { x: { display: false } }, animation: { duration: 0 }, plugins: { legend: { display: false } } }
-                });
-            }
+// ── Utils ──────────────────────────────────────────────────
+function toast(msg,type='info'){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'ti-check',error:'ti-x',warn:'ti-alert-triangle'};
+  t.innerHTML='<div class="toast-icon"><i class="ti '+(icons[type]||'ti-info-circle')+'"></i></div><div>'+msg+'</div>';
+  c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function fmtT(n){return Number(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtR(n){return Number(n).toFixed(4);}
 
-            if(engineInterval) clearInterval(engineInterval);
-            engineInterval = setInterval(() => {
-                let change = (Math.random() - 0.5) * 2;
-                currentPrice = Math.max(1, currentPrice + change); 
-                
-                const disp = document.getElementById('current-price-display');
-                if(disp) {
-                    disp.innerText = `$${currentPrice.toFixed(2)}`;
-                    disp.className = change >= 0 ? 'text-buy' : 'text-sell';
-                }
+// ── Login ──────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  const s=localStorage.getItem('rbx_user');
+  if(s){document.getElementById('inp-user').value=s;doLogin();}
+});
 
-                priceHistory.push(currentPrice);
-                priceHistory.shift();
-                
-                if(chartInst) {
-                    chartInst.data.datasets[0].borderColor = change >= 0 ? 'var(--color-buy)' : 'var(--color-sell)';
-                    chartInst.update();
-                }
-                updateUserUI();
-            }, 1500);
-        }
+async function doLogin(){
+  const uname=document.getElementById('inp-user').value.trim();
+  if(!uname){toast('กรุณากรอก Username','error');return;}
+  const btn=document.getElementById('btn-login');
+  btn.disabled=true;btn.innerText='กำลังโหลด...';
+  const role=uname.toLowerCase()==='admin'?'admin':'user';
+  try{
+    if(typeof window.supabase==='undefined')throw new Error('ไม่พบ Library');
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    let{data,error}=await sb.from('profiles').select('*').eq('username',uname).maybeSingle();
+    if(error)throw error;
+    online=true;
+    if(data){user={id:data.id,username:data.username,role:data.role,thb:parseFloat(data.balance||10000),rbx:parseFloat(data.rbx||data.btc||0)};}
+    else{
+      const{data:nd,error:ce}=await sb.from('profiles').insert([{username:uname,role,balance:10000,rbx:0}]).select().single();
+      if(ce)throw ce;
+      user={id:nd.id,username:nd.username,role:nd.role,thb:parseFloat(nd.balance),rbx:parseFloat(nd.rbx||0)};
+    }
+    toast('เข้าสู่ระบบออนไลน์: <b>'+user.username+'</b>','success');
+  }catch(e){
+    online=false;
+    user={id:'local-'+Date.now(),username:uname,role,thb:10000,rbx:0};
+    toast('โหมดออฟไลน์: '+e.message,'warn');
+  }
+  localStorage.setItem('rbx_user',uname);
+  hide('login-screen');show('app');
+  document.getElementById('disp-user').innerText=user.username;
+  const rb=document.getElementById('role-badge');
+  rb.innerText=user.role.toUpperCase();
+  rb.className='badge '+(user.role==='admin'?'badge-admin':'badge-user');
+  btn.disabled=false;btn.innerText='เข้าสู่ระบบ';
+  if(user.role==='admin'){
+    document.getElementById('networth-chip').style.display='none';
+    show('admin-dash');hide('user-dash');loadUsers();
+  }else{
+    show('user-dash');hide('admin-dash');updateUI();initChart();
+  }
+  startEngine();
+}
+function doLogout(){localStorage.removeItem('rbx_user');location.reload();}
 
-        function executeTrade(type) {
-            const amount = parseFloat(document.getElementById('trade-amount').value);
-            if(isNaN(amount) || amount <= 0) return;
+// ── Chart & Engine ─────────────────────────────────────────
+function initChart(){
+  const ctx=document.getElementById('priceChart').getContext('2d');
+  chart=new Chart(ctx,{
+    type:'line',
+    data:{labels:Array(40).fill(''),datasets:[{data:priceHist,borderColor:'#3d8ef8',tension:.3,pointRadius:0,borderWidth:2,fill:true,
+      backgroundColor:(c)=>{const g=c.chart.ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,'rgba(61,142,248,.18)');g.addColorStop(1,'rgba(61,142,248,0)');return g;}}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{x:{display:false},y:{display:true,grid:{color:'rgba(30,45,69,.5)'},ticks:{color:'#64748b',font:{size:10},callback:v=>'฿'+v.toFixed(0)}}},
+      animation:{duration:400},plugins:{legend:{display:false},tooltip:{enabled:false}}}
+  });
+}
+function startEngine(){
+  if(engine)clearInterval(engine);
+  engine=setInterval(()=>{
+    prevPrice=price;
+    let d=(Math.random()-.5)*2;
+    if(trend==='low')d=Math.random()*.4;
+    else if(trend==='mid')d=Math.random()*3;
+    else if(trend==='max')d=Math.random()*10;
+    price=Math.max(.1,price+d);
+    const disp=document.getElementById('disp-price');
+    const chg=document.getElementById('disp-change');
+    if(disp){
+      disp.innerText='฿'+fmtT(price);
+      const pct=((price-prevPrice)/prevPrice*100);
+      disp.className='price-big '+(d>=0?'up':'down');
+      chg.innerText=(d>=0?'+':'')+pct.toFixed(2)+'%';
+      chg.className='price-change '+(d>=0?'up-bg':'down-bg');
+    }
+    priceHist.push(price);priceHist.shift();
+    if(chart){
+      chart.data.datasets[0].borderColor=d>=0?'#00d68f':'#ff4d6a';
+      chart.data.datasets[0].backgroundColor=(c)=>{
+        const g=c.chart.ctx.createLinearGradient(0,0,0,160);
+        if(d>=0){g.addColorStop(0,'rgba(0,214,143,.15)');g.addColorStop(1,'rgba(0,214,143,0)');}
+        else{g.addColorStop(0,'rgba(255,77,106,.15)');g.addColorStop(1,'rgba(255,77,106,0)');}
+        return g;
+      };
+      chart.data.datasets[0].data=[...priceHist];
+      chart.update('none');
+    }
+    updateUI();updatePreview();
+  },1500);
+}
 
-            const valueUSD = amount * currentPrice;
-            const fee = valueUSD * (sysConfig.fee / 100);
+// ── UI ─────────────────────────────────────────────────────
+function updateUI(){
+  if(!user||user.role!=='user')return;
+  document.getElementById('disp-thb').innerText=fmtT(user.thb);
+  document.getElementById('disp-rbx').innerText=fmtR(user.rbx);
+  const el=document.getElementById('withdraw-rbx-avail');
+  if(el)el.innerText=fmtR(user.rbx)+' RBX';
+  const nw=user.thb+(user.rbx*price);
+  document.getElementById('disp-networth').innerText='฿'+fmtT(nw);
+}
+function selectAmt(amt,el){
+  document.querySelectorAll('.amt-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');selectedAmt=amt;updatePreview();
+}
+function getActualAmt(){
+  if(selectedAmt==='all')return Math.floor((user.thb/(price*1.001))*10000)/10000;
+  return selectedAmt;
+}
+function updatePreview(){
+  const prev=document.getElementById('trade-preview');if(!prev)return;
+  const amt=getActualAmt();const cost=amt*price;const fee=cost*.001;
+  prev.innerHTML='<span style="color:var(--muted2);">จำนวน:</span> <b style="color:var(--text);">'+fmtR(amt)+' RBX</b> &nbsp;|&nbsp; <span style="color:var(--muted2);">มูลค่า:</span> <b style="color:var(--gold);">฿'+fmtT(cost)+'</b> &nbsp;|&nbsp; <span style="color:var(--muted);">ค่าธรรมเนียม: ฿'+fmtT(fee)+'</span>';
+}
 
-            if(type === 'BUY') {
-                const totalCost = valueUSD + fee;
-                if(totalCost > currentUser.balance_usd) return showToast('เงิน USD ไม่พอ', 'error');
-                currentUser.balance_usd -= totalCost;
-                currentUser.balance_btc += amount;
-            } else {
-                if(amount > currentUser.balance_btc) return showToast('BTC ไม่พอ', 'error');
-                currentUser.balance_btc -= amount;
-                currentUser.balance_usd += (valueUSD - fee);
-            }
+async function syncDb(){
+  if(!online||!sb||user.id.includes('local'))return;
+  try{await sb.from('profiles').update({balance:user.thb,rbx:user.rbx}).eq('id',user.id);}catch(e){console.error(e);}
+}
 
-            updateUserUI();
-            showToast(`สั่ง ${type} สำเร็จ`, 'success');
-        }
+// ── Trade ──────────────────────────────────────────────────
+async function doTrade(type){
+  if(AC.state==='suspended')AC.resume();
+  const amt=getActualAmt();
+  if(amt<=0)return toast('จำนวนไม่ถูกต้อง','error');
+  const val=amt*price;const fee=val*.001;
 
-        async function withdraw() {
-            const amount = parseFloat(document.getElementById('withdraw-amount').value);
-            const btn = document.getElementById('btn-withdraw');
+  if(type==='BUY'){
+    const total=val+fee;
+    if(total>user.thb)return toast('ยอดเงินบาทไม่พอ','error');
+    // update avg buy price
+    const prevAmt=user.rbx;
+    const prevAvg=buyPriceMap[user.id]||price;
+    buyPriceMap[user.id]=(prevAvg*prevAmt+price*amt)/(prevAmt+amt);
+    user.thb-=total;user.rbx+=amt;
+    playSoundBuy();
+    addHist('BUY',amt,0);
+    toast('ซื้อ '+fmtR(amt)+' RBX @ ฿'+fmtT(price),'success');
+  }else{
+    if(amt>user.rbx)return toast('RBX ไม่พอ','error');
+    const avgBuy=buyPriceMap[user.id]||price;
+    const pnl=(price-avgBuy)*amt;
+    user.rbx-=amt;user.thb+=(val-fee);
 
-            if (isNaN(amount) || amount <= 0) return;
-            if (amount > currentUser.balance_usd) return showToast('ยอดเงินไม่พอ', 'error');
+    if(pnl>=0){playSoundProfit();}else{playSoundLoss();}
 
-            btn.disabled = true;
-            btn.innerText = 'กำลังส่งข้อมูล...';
+    const pnlTxt=pnl>=0?'<span style="color:var(--green);">+฿'+fmtT(pnl)+'</span>':'<span style="color:var(--red);">-฿'+fmtT(Math.abs(pnl))+'</span>';
+    addHist('SELL',amt,pnl);
+    toast('ขาย '+fmtR(amt)+' RBX @ ฿'+fmtT(price)+' &nbsp;P/L: '+pnlTxt,'success');
+  }
+  updateUI();updatePreview();await syncDb();
+}
 
-            try {
-                currentUser.balance_usd -= amount;
-                updateUserUI();
+function addHist(type,amt,pnl){
+  const list=document.getElementById('hist-list');
+  const empty=list.querySelector('[style*="text-align:center"]');if(empty)empty.remove();
+  const row=document.createElement('div');row.className='hist-row';
+  const color=type==='BUY'?'var(--green)':'var(--red)';
+  const icon=type==='BUY'?'ti-trending-up':'ti-trending-down';
+  let pnlHtml='';
+  if(type==='SELL'){
+    pnlHtml=pnl>=0?'<div style="font-size:.72rem;color:var(--green);">+฿'+fmtT(pnl)+'</div>':'<div style="font-size:.72rem;color:var(--red);">-฿'+fmtT(Math.abs(pnl))+'</div>';
+  }
+  row.innerHTML='<div class="hist-type" style="color:'+color+';"><i class="ti '+icon+'"></i>'+type+' '+fmtR(amt)+' RBX</div><div class="hist-detail"><div>฿'+fmtT(price)+'</div>'+pnlHtml+'<div style="font-size:.72rem;">'+new Date().toLocaleTimeString('th-TH')+'</div></div>';
+  list.insertBefore(row,list.firstChild);
+}
 
-                const msg = `🚨 <b>แจ้งถอนเงิน</b>\n👤 ผู้ใช้: ${currentUser.username}\n💵 ถอน: $${amount.toFixed(2)}\n💳 คงเหลือ: $${currentUser.balance_usd.toFixed(2)}`;
-                await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: TG_CHAT_ID, text: msg, parse_mode: 'HTML' })
-                });
+// ── Withdraw ───────────────────────────────────────────────
+function withdrawAll(){const i=document.getElementById('inp-withdraw');if(i)i.value=fmtR(user.rbx);}
+async function doWithdraw(){
+  if(AC.state==='suspended')AC.resume();
+  const amt=parseFloat(document.getElementById('inp-withdraw').value);
+  if(isNaN(amt)||amt<=0)return toast('กรุณาระบุจำนวน RBX','error');
+  if(amt>user.rbx)return toast('RBX ไม่พอ (มี '+fmtR(user.rbx)+'RBX)','error');
+  const btn=document.getElementById('btn-withdraw');btn.disabled=true;
+  const val=amt*price;user.rbx-=amt;updateUI();await syncDb();
+  const msg='🪙 <b>แจ้งถอน RBX</b>\n\n👤 <b>ผู้ใช้:</b> '+user.username+'\n🪙 <b>ถอน:</b> '+fmtR(amt)+' RBX\n💵 <b>มูลค่า:</b> ฿'+fmtT(val)+'\n📊 <b>ราคา RBX:</b> ฿'+fmtT(price)+'\n\n💼 <b>ยอดคงเหลือ</b>\n   THB: ฿'+fmtT(user.thb)+'\n   RBX: '+fmtR(user.rbx)+' RBX';
+  try{
+    await fetch('https://api.telegram.org/bot'+TG_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:TG_CHAT_ID,text:msg,parse_mode:'HTML'})});
+    playSoundWithdraw();
+    toast('แจ้งถอน '+fmtR(amt)+' RBX เข้า Telegram แล้ว','success');
+  }catch(e){toast('ส่ง Telegram ล้มเหลว','warn');}
+  document.getElementById('inp-withdraw').value='';btn.disabled=false;
+}
 
-                showToast('แจ้งถอนเงินเข้า Telegram สำเร็จ', 'success');
-            } catch (err) {
-                showToast('ส่งแจ้งเตือนพลาด', 'warning');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'ถอนเข้าบัญชี (Telegram)';
-            }
-        }
+// ── Admin controls ─────────────────────────────────────────
+function setTrend(t,el){
+  trend=t;document.querySelectorAll('.trend-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');
+  toast('ปรับกราฟ: <b>'+t.toUpperCase()+'</b>','warn');
+}
+function forcePrice(){
+  const p=parseFloat(document.getElementById('inp-force').value);
+  if(p>0){price=p;priceHist=Array(40).fill(p);toast('ล็อคราคา ฿'+fmtT(p),'success');}
+}
 
-        function setForcePrice() {
-            const p = parseFloat(document.getElementById('admin-force-price').value);
-            if(p > 0) { currentPrice = p; priceHistory = Array(30).fill(p); }
-        }
-    </script>
+async function loadUsers(){
+  const tbody=document.getElementById('admin-tbody');
+  if(!online){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1rem;">ระบบออฟไลน์</td></tr>';return;}
+  try{
+    const{data,error}=await sb.from('profiles').select('*').order('username',{ascending:true});
+    if(error)throw error;
+    tbody.innerHTML='';
+    data.forEach(u=>{
+      const r=document.createElement('tr');
+      r.innerHTML='<td><b>'+u.username+'</b><br><span style="font-size:.75rem;color:var(--muted2);">'+u.role+'</span></td>'
+        +'<td style="color:var(--gold);">฿'+fmtT(u.balance||0)+'</td>'
+        +'<td style="color:var(--blue);">'+parseFloat(u.rbx||u.btc||0).toFixed(4)+' RBX</td>'
+        +'<td><button class="btn-save" style="background:var(--gold);color:#000;" onclick="openAdj(\''+u.id+'\',\''+u.username+'\','+parseFloat(u.balance||0)+','+parseFloat(u.rbx||u.btc||0)+')"><i class="ti ti-wallet"></i> ปรับยอด</button></td>';
+      tbody.appendChild(r);
+    });
+  }catch(e){tbody.innerHTML='<tr><td colspan="4" style="color:var(--red);padding:1rem;">Error: '+e.message+'</td></tr>';}
+}
+
+// ── Adjust Modal ───────────────────────────────────────────
+function openAdj(id,name,thb,rbx){
+  adjTarget={id,thb,rbx};
+  document.getElementById('adj-username').innerText=name;
+  document.getElementById('cur-thb').innerText='฿'+fmtT(thb);
+  document.getElementById('cur-rbx').innerText=fmtR(rbx)+' RBX';
+  document.getElementById('adj-thb-val').value='';
+  document.getElementById('adj-thb-add').value='';
+  document.getElementById('adj-rbx-val').value='';
+  document.getElementById('adj-rbx-add').value='';
+  switchAdjTab('thb');
+  show('adj-modal');
+}
+function closeAdj(){hide('adj-modal');adjTarget=null;}
+function switchAdjTab(tab){
+  adjTab=tab;
+  ['thb','rbx'].forEach(t=>{
+    document.getElementById('tab-'+t).className='adj-tab'+(t===tab?' active':'');
+    const s=document.getElementById('adj-'+t+'-section');
+    if(t===tab)s.classList.remove('hidden');else s.classList.add('hidden');
+  });
+}
+function adjPreset(type,val){
+  const addEl=document.getElementById('adj-'+type+'-add');
+  const cur=parseFloat(addEl.value||0);
+  addEl.value=(cur+val).toString();
+}
+async function confirmAdj(){
+  if(!adjTarget||!online)return toast('ไม่สามารถบันทึกได้','error');
+  let newThb=adjTarget.thb;let newRbx=adjTarget.rbx;
+
+  if(adjTab==='thb'){
+    const setVal=document.getElementById('adj-thb-val').value;
+    const addVal=document.getElementById('adj-thb-add').value;
+    if(setVal!=='')newThb=parseFloat(setVal);
+    if(addVal!=='')newThb+=parseFloat(addVal);
+    if(newThb<0)newThb=0;
+  }else{
+    const setVal=document.getElementById('adj-rbx-val').value;
+    const addVal=document.getElementById('adj-rbx-add').value;
+    if(setVal!=='')newRbx=parseFloat(setVal);
+    if(addVal!=='')newRbx+=parseFloat(addVal);
+    if(newRbx<0)newRbx=0;
+  }
+
+  try{
+    const{error}=await sb.from('profiles').update({balance:newThb,rbx:newRbx,btc:newRbx}).eq('id',adjTarget.id);
+    if(error)throw error;
+    toast('บันทึกยอดเงินสำเร็จ','success');
+    closeAdj();loadUsers();
+  }catch(e){toast('บันทึกไม่สำเร็จ: '+e.message,'error');}
+}
+</script>
 </body>
 </html>
-
