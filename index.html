@@ -184,23 +184,6 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
-
-        /* UX enhancements */
-        .scan-hint { background: rgba(255,255,255,.72); border: 1px solid rgba(148,163,184,.18); }
-        .status-badge { display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border-radius:999px; font-size:.75rem; font-weight:700; }
-        .status-badge.waste { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
-        .status-badge.not-waste { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
-        .result-image { width:100%; max-height:260px; object-fit:contain; border-radius:18px; background:#0f172a; }
-        .object-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-        .object-chip { padding:6px 10px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:.78rem; }
-        @media(max-width:640px){
-            .main-shell { padding:12px !important; }
-            .main-card, .result-card { padding:18px !important; border-radius:22px !important; }
-            .upload-zone { padding:28px 16px !important; }
-            .page-title { font-size:2.25rem !important; }
-            .action-grid { grid-template-columns:1fr !important; }
-            .preview-container img { max-height:300px; }
-        }
     
         /* Direct camera modal */
         .camera-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.82);backdrop-filter:blur(8px)}
@@ -224,7 +207,7 @@
 </head>
 <body class="gradient-bg min-h-screen text-slate-800">
 
-    <div class="max-w-2xl mx-auto space-y-5 p-4 py-7 main-shell">
+    <div class="max-w-2xl mx-auto space-y-6 p-4 py-8">
         
         <!-- Header -->
         <header class="text-center space-y-3 animate-fade-in">
@@ -237,16 +220,16 @@
                 </svg>
             </div>
             <div>
-                <h1 class="text-5xl font-bold text-slate-900 mb-2 page-title">KayaScan</h1>
-                <p class="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">ถ่ายหรือเลือกรูปวัตถุ 1 ชิ้นให้เห็นชัด แล้วให้ AI ตรวจว่าเป็น “ขยะ” หรือไม่ ก่อนแนะนำวิธีจัดการ</p>
+                <h1 class="text-5xl font-bold text-slate-900 mb-2">KayaScan</h1>
+                <p class="text-slate-600 text-sm max-w-sm mx-auto leading-relaxed">ถ่ายรูปวัตถุที่ต้องการตรวจ แล้วให้ AI ตรวจว่าเป็นขยะหรือไม่ ก่อนแนะนำวิธีจัดการ</p>
             </div>
         </header>
 
         <!-- Main Card -->
-        <main class="glass-card rounded-3xl shadow-xl p-8 space-y-5 animate-slide-up main-card">
+        <main class="glass-card rounded-3xl shadow-xl p-8 space-y-5 animate-slide-up">
             
             <!-- Upload Area -->
-            <div id="dropZone" class="upload-zone border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/40 transition-all duration-300 group">
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/40 transition-all duration-300 group">
                 <div class="inline-flex items-center justify-center p-4 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2"></rect>
@@ -255,11 +238,7 @@
                     </svg>
                 </div>
                 <h3 class="font-semibold text-slate-700 text-lg mb-1">ลากรูปมาวางที่นี่</h3>
-                <p class="text-sm text-slate-400">หรือคลิกเพื่อเลือกรูป • JPG, PNG, WebP</p>
-                 <div class="scan-hint rounded-xl p-3 mt-4 text-left text-xs text-slate-500">
-                    <div class="font-semibold text-slate-700 mb-1">📷 ถ่ายให้ AI ดูง่ายขึ้น</div>
-                    <div>วางวัตถุให้เห็นชัด • แสงเพียงพอ • หลีกเลี่ยงภาพไกล/เบลอ • ถ้ามีหลายสิ่งในภาพ AI จะโฟกัสเฉพาะสิ่งที่เป็นขยะ</div>
-                 </div>
+                <p class="text-sm text-slate-400">หรือคลิกเพื่อเลือกรูป • JPG, PNG, WebP</p><p class="text-xs text-emerald-600 mt-2">แนะนำ: ให้เห็นวัตถุชัด ๆ และไม่ถ่ายไกลเกินไป</p>
                 <input type="file" id="fileInput" accept="image/*" class="hidden">
             </div>
 
@@ -272,7 +251,7 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-4 action-grid">
+            <div class="grid grid-cols-2 gap-4">
                 <button id="cameraBtn" class="btn-secondary flex items-center justify-center gap-3 px-5 py-3.5 text-slate-700 font-semibold rounded-xl transition active:scale-95">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
@@ -315,6 +294,10 @@
                     <span id="errorText" class="flex-1"></span>
                 </div>
             </div>
+
+            <p class="text-center text-xs text-slate-400 px-2">
+                💡 ถ่ายให้วัตถุอยู่กลางภาพ เห็นรายละเอียดชัด และหลีกเลี่ยงภาพที่มีสิ่งของหลายอย่างบังกัน
+            </p>
         </main>
 
         <!-- Loading State -->
@@ -327,7 +310,7 @@
         </div>
 
         <!-- Result Card -->
-        <div id="resultCard" class="hidden glass-card rounded-3xl shadow-xl p-8 space-y-5 animate-fade-in result-card">
+        <div id="resultCard" class="hidden glass-card rounded-3xl shadow-xl p-8 space-y-5 animate-fade-in">
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div class="success-badge px-4 py-2 rounded-full flex items-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
@@ -343,8 +326,7 @@
                     ตรวจสอบใหม่
                 </button>
             </div>
-            <img id="resultImage" class="result-image hidden" alt="รูปที่นำมาวิเคราะห์">
-             <div class="markdown-body text-sm space-y-3" id="resultBody"></div>
+            <div class="markdown-body text-sm space-y-3" id="resultBody"></div>
         </div>
 
     </div>
@@ -355,17 +337,13 @@
         
         // Model preference order
         const MODEL_PRIORITY = [
-            'gemini-3.6-flash',
-            'gemini-3.5-flash',
-            'gemini-3.5-flash-lite',
-            'gemini-3.1-flash-lite'
+            'gemini-3.7-flash'
         ];
 
         // ============= STATE =============
         let base64Image = null;
         let imageMimeType = null;
         let selectedModel = null;
-        let isAnalyzing = false;
 
         // ============= DOM ELEMENTS =============
         const dropZone = document.getElementById('dropZone');
@@ -386,7 +364,6 @@
         const loaderText = document.getElementById('loaderText');
         const resultCard = document.getElementById('resultCard');
         const resultBody = document.getElementById('resultBody');
-        const resultImage = document.getElementById('resultImage');
         const errorBox = document.getElementById('errorBox');
         const errorText = document.getElementById('errorText');
 
@@ -568,7 +545,7 @@
         // ============= API FUNCTIONS =============
         async function findBestModel() {
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models`;
                 const res = await fetch(url);
                 const data = await res.json();
 
@@ -608,7 +585,7 @@
                 throw new Error('ไม่พบโมเดล Gemini 3.x ที่รองรับ generateContent สำหรับ API Key นี้');
             } catch (err) {
                 console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้ จะใช้โมเดลสำรอง (gemini-3.6-flash):', err.message);
-                return 'models/gemini-3.6-flash'; // Fallback สำหรับโมเดลรุ่นปัจจุบัน
+                return 'models/gemini-3.7-flash'; // Current documented fallback
             }
         }
 
@@ -630,33 +607,31 @@
                 // Prepare analysis
                 // ใช้ Structured Output (JSON) แทนการบังคับ Markdown
                 // เพื่อป้องกันข้อความหาย/หัวข้อหาย/รูปแบบเพี้ยนบนมือถือ
-                const prompt = `คุณคือ KayaScan AI สำหรับตรวจสอบวัตถุในภาพเพื่อแยก "ขยะ" ออกจาก "สิ่งที่ไม่ใช่ขยะ"
+                const prompt = `ตรวจสอบภาพที่แนบมาเพื่อคัดกรอง "ขยะ" ก่อน แล้วตอบเป็น JSON ตาม schema ที่กำหนดเท่านั้น
 
-เป้าหมายสำคัญ:
-- ต้องตรวจ "ก่อนว่าในภาพมีขยะหรือไม่" ห้ามสมมติว่าวัตถุทุกอย่างเป็นขยะ
-- ถ้าในภาพมีหลายวัตถุ ให้สังเกตเฉพาะสิ่งที่เป็นขยะและอธิบายสิ่งนั้น ไม่ต้องเอาวัตถุที่ไม่ใช่ขยะมาวิเคราะห์เป็นขยะ
-- ถ้าไม่พบขยะเลย ให้ตอบว่าในภาพไม่ใช่ขยะ/ไม่พบขยะ และแนะนำให้ผู้ใช้หาวัตถุที่เป็นขยะมาถ่ายใหม่
-- ถ้าพบขยะอย่างน้อย 1 ชิ้น ให้เลือก "วัตถุขยะหลัก" ที่เห็นชัดที่สุดเพื่อแนะนำการจัดการ
-- ถ้าภาพเบลอ มืด ไกล หรือระบุไม่ได้จริง ๆ ให้บอกว่าไม่สามารถยืนยันได้ และแนะนำให้ถ่ายใหม่ โดยอย่าฝืนเดาว่าเป็นขยะ
-- ประเภทขยะเลือกได้เพียง: อินทรีย์, รีไซเคิล, ทั่วไป, อันตราย
-- ระบุสีถังขยะที่เหมาะสมสำหรับประเทศไทยเท่าที่มั่นใจ
-- วิธีจัดการ 2-4 ข้อ
-- การนำไปใช้ต่อให้เหมาะกับวัตถุนั้น ถ้าไม่ควรใช้ซ้ำให้บอกตรง ๆ
-- ข้อความทุกช่องเป็นภาษาไทย อ่านง่าย กระชับ แต่ครบ
-- ห้ามใช้ Markdown, *, # หรือโค้ดบล็อก
-- ต้องตอบ JSON ตาม schema เท่านั้น
+กติกาสำคัญ:
+1. ขั้นแรกต้องตัดสินก่อนว่าภาพมีขยะหรือไม่
+2. ถ้าในภาพมีขยะ ให้สนใจและวิเคราะห์เฉพาะวัตถุที่เป็นขยะเท่านั้น ห้ามนำคน สัตว์ พื้น โต๊ะ อาคาร เครื่องใช้ที่กำลังใช้งาน หรือสิ่งของที่ไม่ใช่ขยะมาวิเคราะห์เป็นขยะ
+3. ถ้ามีหลายวัตถุ ให้เลือกวัตถุที่เป็นขยะเด่นที่สุดและระบุชื่อให้ชัดเจน
+4. ถ้าภาพไม่มีขยะ หรือสิ่งที่เห็นไม่ใช่ขยะ ให้ตั้ง isWaste=false และตอบว่า "ในรูปไม่ใช่ขยะ" พร้อมแนะนำให้ผู้ใช้หาวัตถุที่เป็นขยะมาถ่ายใหม่
+5. ถ้าไม่แน่ใจว่าวัตถุนั้นเป็นขยะหรือไม่ ให้ถือว่ายังตรวจไม่พบขยะ และแนะนำให้ถ่ายวัตถุให้ชัดขึ้น
+6. เมื่อ isWaste=true ให้เลือกประเภทได้เพียง: อินทรีย์, รีไซเคิล, ทั่วไป, อันตราย
+7. เมื่อ isWaste=true ให้ระบุสีถังขยะที่เหมาะสมสำหรับประเทศไทย
+8. เมื่อ isWaste=true วิธีจัดการต้องมีอย่างน้อย 2 ข้อ และไม่เกิน 4 ข้อ
+9. เมื่อ isWaste=true การนำไปใช้ต่อให้ระบุวิธีรีไซเคิล/ใช้ซ้ำที่เหมาะสม ถ้าใช้ต่อไม่ได้ให้บอกว่าไม่ควรนำกลับมาใช้
+10. เมื่อ isWaste=false ให้ใช้ category="ไม่ใช่ขยะ", binColor="ไม่ต้องทิ้งลงถัง", disposalMethods เป็นคำแนะนำให้ถ่ายวัตถุใหม่ 2-3 ข้อ และ reuse อธิบายว่าไม่ควรวิเคราะห์ภาพนี้เป็นขยะ
+11. ห้ามตอบเป็น Markdown ห้ามใส่เครื่องหมาย * หรือ # และห้ามตัดข้อความกลางประโยค
+12. ข้อความทุกช่องต้องเป็นภาษาไทย อ่านง่าย กระชับ และไม่แต่งข้อมูลที่มองไม่เห็น
 
-เกณฑ์สำคัญ:
-isWaste = true เฉพาะเมื่อมีหลักฐานจากภาพว่าวัตถุนั้นเป็นขยะหรือเป็นของที่ถูกทิ้ง/ควรทิ้ง
-isWaste = false เมื่อไม่พบขยะในภาพ
-ถ้า isWaste = false ให้ category, binColor, disposalMethods และ reuse ใช้ค่าที่เหมาะกับกรณีไม่ใช่ขยะได้ โดยต้องอธิบายให้ชัดว่าควรถ่ายวัตถุที่เป็นขยะใหม่
-`;
+ต้องให้ข้อมูลครบทุกช่องใน schema เสมอ`;
+
+                // จัดการกรณีที่ชื่อโมเดลอาจจะไม่มี 'models/' นำหน้า
                 const modelPath = selectedModel.startsWith('models/') ? selectedModel : `models/${selectedModel}`;
-                const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent?key=${API_KEY}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent`;
 
                 const res = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
                     body: JSON.stringify({
                         contents: [{
                             parts: [
@@ -676,7 +651,6 @@ isWaste = false เมื่อไม่พบขยะในภาพ
                                 properties: {
                                     isWaste: { type: 'BOOLEAN' },
                                     objectName: { type: 'STRING' },
-                                    reason: { type: 'STRING' },
                                     category: {
                                         type: 'STRING',
                                         enum: ['อินทรีย์', 'รีไซเคิล', 'ทั่วไป', 'อันตราย', 'ไม่ใช่ขยะ']
@@ -690,7 +664,7 @@ isWaste = false เมื่อไม่พบขยะในภาพ
                                     },
                                     reuse: { type: 'STRING' }
                                 },
-                                required: ['isWaste', 'objectName', 'reason', 'category', 'binColor', 'disposalMethods', 'reuse']
+                                required: ['isWaste', 'objectName', 'category', 'binColor', 'disposalMethods', 'reuse']
                             },
                             maxOutputTokens: 1200
                         }
@@ -701,9 +675,12 @@ isWaste = false เมื่อไม่พบขยะในภาพ
 
                 if (!res.ok) {
                     let errorMsg = result.error?.message || 'API Error';
+                    if (res.status === 401 || /authentication|unauthenticated|credential|api key/i.test(errorMsg)) {
+                        errorMsg = 'API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์ กรุณาสร้าง/ตรวจสอบ Gemini API Key ใหม่ใน Google AI Studio และตรวจสอบข้อจำกัดของ Key';
+                    }
 
                     if (/no longer available to new users/i.test(errorMsg)) {
-                        errorMsg += ' — โค้ดนี้ถูกอัปเดตให้ใช้ Gemini 3.x แล้ว หากยังพบข้อความนี้ ให้ตรวจสอบ API Key/Project และเปิดใช้งาน Gemini API ใน Google AI Studio';
+                        errorMsg += ' — กรุณาตรวจสอบว่า API Key และ Project มีสิทธิ์ใช้โมเดลที่เลือก';
                     }
 
                     throw new Error(errorMsg);
@@ -741,12 +718,21 @@ isWaste = false เมื่อไม่พบขยะในภาพ
                     : [];
 
                 if (typeof analysis.isWaste !== 'boolean' ||
-                    !analysis.objectName || !analysis.reason ||
-                    !analysis.category || !analysis.binColor ||
-                    methods.length < 2 || !analysis.reuse) {
+                    !analysis.objectName ||
+                    !analysis.category ||
+                    !analysis.binColor ||
+                    methods.length < 2 ||
+                    !analysis.reuse) {
                     throw new Error('AI ส่งข้อมูลมาไม่ครบ กรุณากดวิเคราะห์อีกครั้ง');
                 }
 
+                // ป้องกัน AI เผลอวิเคราะห์สิ่งที่ไม่ใช่ขยะ
+                if (!analysis.isWaste) {
+                    analysis.category = 'ไม่ใช่ขยะ';
+                    analysis.binColor = 'ไม่ต้องทิ้งลงถัง';
+                }
+
+                // สร้าง HTML เองแทน marked เพื่อให้ข้อความภาษาไทยไม่ถูกตัด/แปลงรูปแบบผิด
                 const escapeHTML = value => String(value)
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
@@ -754,55 +740,55 @@ isWaste = false เมื่อไม่พบขยะในภาพ
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#039;');
 
-                resultImage.src = previewImage.src;
-                resultImage.classList.remove('hidden');
+                const statusTitle = analysis.isWaste ? 'ตรวจพบขยะ' : 'ไม่พบขยะในภาพ';
+                const statusClass = analysis.isWaste
+                    ? 'bg-emerald-50/70 border-emerald-100'
+                    : 'bg-amber-50/80 border-amber-200';
+                const statusTextClass = analysis.isWaste
+                    ? 'text-emerald-700'
+                    : 'text-amber-700';
 
-                if (!analysis.isWaste) {
-                    resultBody.innerHTML = `
-                        <section class="space-y-4">
-                            <div class="rounded-2xl bg-orange-50 border border-orange-100 p-5">
-                                <div class="status-badge not-waste mb-3">ℹ️ ไม่พบขยะในภาพ</div>
-                                <h2 class="text-base font-bold text-orange-700 mb-2">ผลการตรวจสอบ</h2>
-                                <p class="text-sm text-slate-700 leading-7">${escapeHTML(analysis.reason)}</p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
-                                <h2 class="text-base font-bold text-emerald-700 mb-2">แนะนำให้ถ่ายใหม่</h2>
-                                <p class="text-sm text-slate-700 leading-7">ในภาพนี้ไม่พบสิ่งที่ยืนยันได้ว่าเป็นขยะ กรุณาหาวัตถุที่เป็นขยะมาถ่ายใหม่ และให้เห็นวัตถุชัดขึ้น</p>
-                                <p class="text-xs text-slate-500 mt-3"><strong>สิ่งที่ AI เห็น:</strong> ${escapeHTML(analysis.objectName)}</p>
-                            </div>
-                        </section>
-                    `;
-                } else {
-                    resultBody.innerHTML = `
-                        <section class="space-y-4">
-                            <div class="rounded-2xl bg-emerald-50/70 border border-emerald-100 p-4">
-                                <div class="status-badge waste mb-3">✓ พบขยะในภาพ</div>
-                                <h2 class="text-base font-bold text-emerald-700 mb-3">ข้อมูลขยะ</h2>
-                                <div class="space-y-2 text-sm text-slate-700">
-                                    <p><strong>ชื่อวัตถุ:</strong> ${escapeHTML(analysis.objectName)}</p>
-                                    <p><strong>ประเภท:</strong> ${escapeHTML(analysis.category)}</p>
-                                    <p><strong>ถังขยะ:</strong> ${escapeHTML(analysis.binColor)}</p>
-                                    <p><strong>เหตุผล:</strong> ${escapeHTML(analysis.reason)}</p>
+                resultBody.innerHTML = `
+                    <section class="space-y-4">
+                        <div class="rounded-2xl ${statusClass} border p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="text-2xl">${analysis.isWaste ? '♻️' : '📷'}</div>
+                                <div>
+                                    <h2 class="text-base font-bold ${statusTextClass} mb-1">${statusTitle}</h2>
+                                    <p class="text-sm text-slate-600">
+                                        ${analysis.isWaste
+                                            ? 'ระบบจะวิเคราะห์เฉพาะสิ่งที่เป็นขยะในภาพ'
+                                            : 'ในรูปไม่ใช่ขยะ แนะนำให้หาวัตถุที่เป็นขยะมาถ่ายใหม่'}
+                                    </p>
                                 </div>
                             </div>
+                        </div>
 
-                            <div>
-                                <h2 class="text-base font-bold text-emerald-700 mb-2">วิธีจัดการที่ถูกต้อง</h2>
-                                <ul class="space-y-2">
-                                    ${methods.map(method => `<li class="flex gap-2 text-sm text-slate-700"><span class="text-emerald-500 font-bold">✓</span><span>${escapeHTML(method)}</span></li>`).join('')}
-                                </ul>
+                        <div class="rounded-2xl bg-white border border-slate-100 p-4">
+                            <h2 class="text-base font-bold text-emerald-700 mb-3">${analysis.isWaste ? 'ข้อมูลขยะ' : 'สิ่งที่ตรวจพบ'}</h2>
+                            <div class="space-y-2 text-sm text-slate-700">
+                                <p><strong>วัตถุ:</strong> ${escapeHTML(analysis.objectName)}</p>
+                                <p><strong>สถานะ:</strong> ${escapeHTML(analysis.category)}</p>
+                                <p><strong>ถังขยะ:</strong> ${escapeHTML(analysis.binColor)}</p>
                             </div>
+                        </div>
 
-                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-                                <h2 class="text-base font-bold text-emerald-700 mb-2">การนำไปใช้ต่อ</h2>
-                                <p class="text-sm text-slate-700 leading-7">${escapeHTML(analysis.reuse)}</p>
-                            </div>
-                        </section>
-                    `;
-                }
+                        <div>
+                            <h2 class="text-base font-bold text-emerald-700 mb-2">
+                                ${analysis.isWaste ? 'วิธีจัดการที่ถูกต้อง' : 'แนะนำให้ถ่ายใหม่'}
+                            </h2>
+                            <ul class="space-y-2">
+                                ${methods.map(method => `<li class="flex gap-2 text-sm text-slate-700"><span class="text-emerald-500 font-bold">✓</span><span>${escapeHTML(method)}</span></li>`).join('')}
+                            </ul>
+                        </div>
 
+                        <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                            <h2 class="text-base font-bold text-emerald-700 mb-2">${analysis.isWaste ? 'การนำไปใช้ต่อ' : 'คำแนะนำ'}</h2>
+                            <p class="text-sm text-slate-700 leading-7">${escapeHTML(analysis.reuse)}</p>
+                        </div>
+                    </section>
+                `;
                 resultCard.classList.remove('hidden');
-                resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (err) {
                 console.error('❌ Error:', err);
