@@ -27,11 +27,9 @@
             overflow-x: hidden;
             overflow-y: auto;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-            /* เพิ่ม Transition ให้เปลี่ยนขนาดได้นุ่มนวล */
             transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s ease;
         }
 
-        /* Responsive Layouts สำหรับ Desktop */
         @media (min-width: 640px) {
             .app-container {
                 height: 90vh;
@@ -47,7 +45,7 @@
                 height: 100vh;
                 height: 100dvh;
                 border-radius: 0;
-                max-width: 100% !important; /* บังคับเต็มจอบนมือถือจริง */
+                max-width: 100% !important;
             }
         }
 
@@ -113,7 +111,7 @@
 </head>
 <body class="text-slate-800 antialiased flex items-center justify-center min-h-screen relative">
 
-    <!-- Screen Size Toggle (มุมขวาบน จะซ่อนในจอมือถือเล็กๆ) -->
+    <!-- Screen Size Toggle (ขวาบน) -->
     <div class="fixed top-5 right-5 z-[999] hidden sm:flex bg-white/90 backdrop-blur-md border border-slate-200 rounded-full p-1.5 shadow-xl items-center gap-1">
         <button id="btnMobile" class="p-2.5 rounded-full bg-emerald-100 text-emerald-700 shadow-sm transition-all" title="Mobile View">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
@@ -122,11 +120,11 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
         </button>
         <button id="btnDesktop" class="p-2.5 rounded-full text-slate-400 hover:bg-slate-100 transition-all" title="Desktop View">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </button>
     </div>
 
-    <!-- App Container (เริ่มต้นเป็นขนาด 440px / Mobile) -->
+    <!-- App Container -->
     <div id="appContainer" class="app-container flex flex-col max-w-[440px]">
         
         <header class="bg-emerald-600 text-white p-5 pt-8 rounded-b-3xl shadow-md z-10 shrink-0">
@@ -181,9 +179,57 @@
                 <p class="text-xs text-slate-400 mt-1">ใช้เวลาประมาณ 3-5 วินาที</p>
             </div>
 
+            <!-- Result Area -->
             <div id="resultArea" class="hidden space-y-4 pb-6 animate-slide-up max-w-2xl mx-auto">
                 <!-- Result from AI -->
             </div>
+
+            <!-- เกี่ยวกับ KayaScan (เพิ่มเข้ามาใหม่ในพื้นที่ว่างด้านล่าง) -->
+            <section id="aboutSection" class="bg-gradient-to-br from-emerald-50/60 to-slate-50 border border-emerald-100 rounded-3xl p-5 space-y-4 max-w-2xl mx-auto animate-fade-in">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base">KayaScan คืออะไร?</h2>
+                        <p class="text-xs text-emerald-600 font-medium">ผู้ช่วยสแกนขยะอัจฉริยะด้วยระบบ AI</p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    <strong class="text-emerald-700 font-semibold">KayaScan (ขยะสแกน)</strong> คือเว็บแอปพลิเคชันที่พัฒนาขึ้นเพื่อช่วยแก้ปัญหาการคัดแยกขยะในชีวิตประจำวัน เพียงแค่ถ่ายภาพวัตถุ ระบบ AI จะช่วยระบุประเภทขยะและบอกวิธีการคัดแยกที่ถูกต้องทันที
+                </p>
+
+                <div class="space-y-2.5 pt-1">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">🎯 จุดประสงค์หลักของระบบ</h3>
+                    
+                    <div class="grid grid-cols-1 gap-2 text-xs">
+                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
+                            <span class="text-base">🗑️</span>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-0.5">คัดแยกขยะลงถังได้ถูกต้อง</h4>
+                                <p class="text-slate-500">แนะนำประเภทขยะ (รีไซเคิล, อินทรีย์, ทั่วไป, อันตราย) พร้อมระบุสีถังขยะตามมาตรฐานไทย</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
+                            <span class="text-base">♻️</span>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-0.5">ส่งเสริมการใช้ซ้ำ & รีไซเคิล</h4>
+                                <p class="text-slate-500">บอกเคล็ดลับการนำสิ่งของกลับมาใช้ใหม่ (Reuse) ช่วยเพิ่มคุณค่าและลดปริมาณขยะสะสม</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
+                            <span class="text-base">🌱</span>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-0.5">เป็นมิตรต่อสิ่งแวดล้อม</h4>
+                                <p class="text-slate-500">ช่วยลดปัญหาขยะปนเปื้อนตั้งแต่ต้นทาง สร้างนิสัยการแยกขยะที่ง่ายและสะดวกสำหรับทุกคน</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
         </main>
 
@@ -221,14 +267,12 @@
         };
 
         function setViewMode(mode) {
-            // ล้างคลาสปัจจุบัน
             appContainer.classList.remove('max-w-[440px]', 'max-w-[768px]', 'max-w-[1024px]');
             Object.values(viewBtns).forEach(btn => {
                 btn.classList.remove('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
                 btn.classList.add('text-slate-400', 'hover:bg-slate-100');
             });
 
-            // ตั้งค่าโหมดใหม่
             if (mode === 'mobile') {
                 appContainer.classList.add('max-w-[440px]');
                 viewBtns.mobile.classList.add('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
