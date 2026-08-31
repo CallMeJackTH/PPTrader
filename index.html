@@ -338,15 +338,19 @@
 
     <script>
         // ============= CONFIG =============
-        const API_KEY = "AQ.Ab8RN6J2xg51nj5bFnl-w_abxe6Z6cg2mchMr-KJBRPS6yZBSA"; // แนะนำ: หากใช้งานจริงบนเซิร์ฟเวอร์ ควรซ่อน API Key ไว้ที่ Backend
-        
-        // Model preference order (ตัวแรกคือโมเดลที่ยืนยันแล้วว่าใช้กับ API Key นี้ได้)
+        // ใช้ OpenRouter (https://openrouter.ai) เป็นตัวกลางเรียก AI แทนการยิงตรงไปที่ Google
+        // ข้อดี: คีย์เดียวสลับข้ามค่าย (Google, OpenAI ฯลฯ) ได้ ถ้าโมเดล/ผู้ให้บริการหนึ่งใช้ไม่ได้ก็ลองอีกเจ้าอัตโนมัติ
+        const API_KEY = "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"; // แนะนำ: หากใช้งานจริงบนเซิร์ฟเวอร์ ควรซ่อน API Key ไว้ที่ Backend
+        const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+
+        // Model preference order — ใช้รูปแบบ "ผู้ให้บริการ/ชื่อโมเดล" ตามที่ OpenRouter กำหนด
+        // เรียงจากโมเดลที่เร็ว/ถูก และรองรับภาพ ไปจนถึงตัวสำรองข้ามค่ายเผื่อ Google ใช้ไม่ได้
         const MODEL_PRIORITY = [
-            'gemini-2.5-flash',
-            'gemini-3.7-flash',
-            'gemini-3.6-flash',
-            'gemini-3.5-flash',
-            'gemini-2.0-flash'
+            'google/gemini-2.5-flash',
+            'google/gemini-2.0-flash-001',
+            'google/gemini-flash-1.5-8b',
+            'openai/gpt-4o-mini',
+            'meta-llama/llama-3.2-11b-vision-instruct'
         ];
 
         // ============= STATE =============
@@ -648,94 +652,78 @@
 
         // ============= API FUNCTIONS =============
         // คืนรายชื่อโมเดลที่ "น่าจะ" ใช้ได้กับ API Key นี้ เรียงตามลำดับที่ควรลองก่อน
-        // ใช้สำหรับลองไล่ทีละโมเดลอัตโนมัติ เผื่อบางโมเดลใช้กับคีย์นี้ไม่ได้ (เช่น 404 / ไม่มีสิทธิ์)
+        // ใช้สำหรับลองไล่ทีละโมเดลอัตโนมัติ เผื่อบางโมเดล/ผู้ให้บริการใช้กับคีย์นี้ไม่ได้ (404 / หมดเครดิต ฯลฯ)
         async function buildModelCandidates() {
-            const candidates = []; // เก็บชื่อแบบเต็ม "models/xxx" ไม่ซ้ำ
+            const candidates = []; // เก็บ id แบบ "provider/model" ไม่ซ้ำ
             const seen = new Set();
-            const addCandidate = name => {
-                if (!name) return;
-                const full = name.startsWith('models/') ? name : `models/${name}`;
-                if (!seen.has(full)) {
-                    seen.add(full);
-                    candidates.push(full);
+            const addCandidate = id => {
+                if (id && !seen.has(id)) {
+                    seen.add(id);
+                    candidates.push(id);
                 }
             };
 
             let available = [];
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
-                    headers: { 'x-goog-api-key': API_KEY }
+                const res = await fetch(`${OPENROUTER_BASE_URL}/models`, {
+                    headers: { 'Authorization': `Bearer ${API_KEY}` }
                 });
                 const data = await res.json();
-                if (res.ok && !data.error) {
-                    available = (data.models || []).filter(m =>
-                        m.supportedGenerationMethods?.includes('generateContent')
+                if (res.ok && Array.isArray(data.data)) {
+                    // เลือกเฉพาะโมเดลที่รองรับภาพ (input modality "image")
+                    available = data.data.filter(m =>
+                        m.architecture?.input_modalities?.includes('image')
                     );
                 }
             } catch (e) {
-                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้:', e.message);
+                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลจาก OpenRouter ได้:', e.message);
             }
 
-            // 1) โมเดลที่อยู่ในลิสต์ความสำคัญ และมีอยู่จริงในรายการที่ API Key นี้เข้าถึงได้
-            for (const priority of MODEL_PRIORITY) {
-                const match = available.find(m => m.name.replace(/^models\//, '') === priority);
-                if (match) addCandidate(match.name);
-            }
+            const availableIds = new Set(available.map(m => m.id));
 
-            // 2) โมเดลตระกูล flash อื่นๆ ที่ API Key นี้เข้าถึงได้ (เผื่อโมเดลใน MODEL_PRIORITY ใช้ไม่ได้จริง)
+            // 1) โมเดลในลิสต์ความสำคัญ ที่ยืนยันแล้วว่า OpenRouter รองรับภาพจริง (ถ้าดึงลิสต์สำเร็จ)
+            MODEL_PRIORITY.forEach(id => {
+                if (availableIds.size === 0 || availableIds.has(id)) addCandidate(id);
+            });
+
+            // 2) โมเดลรองรับภาพตัวอื่นๆ ที่ OpenRouter มีให้ (เผื่อทุกตัวใน MODEL_PRIORITY ใช้ไม่ได้จริง)
             available
-                .filter(m => /gemini-(2|3)\.\d.*flash/.test(m.name))
-                .forEach(m => addCandidate(m.name));
-
-            // 3) รายชื่อโมเดลสำรองแบบ hard-code เผื่อดึงลิสต์จาก API ไม่สำเร็จเลย
-            MODEL_PRIORITY.forEach(addCandidate);
-            ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+                .map(m => m.id)
+                .filter(id => /flash|mini|vision|gpt-4o|gemini/i.test(id))
                 .forEach(addCandidate);
+
+            // 3) รายชื่อสำรองแบบ hard-code เผื่อดึงลิสต์จาก API ไม่สำเร็จเลย
+            MODEL_PRIORITY.forEach(addCandidate);
 
             return candidates;
         }
 
-        // เรียก Gemini กับโมเดลที่ระบุ 1 ครั้ง คืนค่าผลวิเคราะห์ที่ผ่านการตรวจสอบแล้ว
+        // เรียก OpenRouter (รูปแบบ OpenAI-compatible) กับโมเดลที่ระบุ 1 ครั้ง คืนค่าผลวิเคราะห์ที่ผ่านการตรวจสอบแล้ว
         // โยน error พร้อม .retryable=true หากควรลองโมเดลถัดไปแทนที่จะเลิกทันที
-        async function callGeminiModel(modelPath, prompt) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent`;
+        async function callGeminiModel(modelId, prompt) {
+            const url = `${OPENROUTER_BASE_URL}/chat/completions`;
 
             let res, result;
             try {
                 res = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'HTTP-Referer': location.origin,
+                        'X-Title': 'KayaScan'
+                    },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                { inline_data: { mime_type: imageMimeType, data: base64Image } }
+                        model: modelId,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                { type: 'text', text: prompt },
+                                { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Image}` } }
                             ]
                         }],
-                        generationConfig: {
-                            responseMimeType: 'application/json',
-                            responseSchema: {
-                                type: 'OBJECT',
-                                properties: {
-                                    isWaste: { type: 'BOOLEAN' },
-                                    objectName: { type: 'STRING' },
-                                    category: {
-                                        type: 'STRING',
-                                        enum: ['อินทรีย์', 'รีไซเคิล', 'ทั่วไป', 'อันตราย', 'ไม่ใช่ขยะ']
-                                    },
-                                    binColor: { type: 'STRING' },
-                                    disposalMethods: {
-                                        type: 'ARRAY',
-                                        items: { type: 'STRING' },
-                                        minItems: 2,
-                                        maxItems: 4
-                                    },
-                                    reuse: { type: 'STRING' }
-                                },
-                                required: ['isWaste', 'objectName', 'category', 'binColor', 'disposalMethods', 'reuse']
-                            },
-                            maxOutputTokens: 1200
-                        }
+                        response_format: { type: 'json_object' },
+                        max_tokens: 1200
                     })
                 });
                 result = await res.json();
@@ -745,23 +733,29 @@
                 throw e;
             }
 
-            if (!res.ok) {
+            if (!res.ok || result.error) {
                 const rawMsg = result.error?.message || 'API Error';
                 let errorMsg = rawMsg;
                 let retryable = false;
+                const status = result.error?.code || res.status;
 
-                if (res.status === 401 || /authentication|unauthenticated|credential|api key/i.test(rawMsg)) {
-                    errorMsg = 'API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์ กรุณาสร้าง/ตรวจสอบ Gemini API Key ใหม่ใน Google AI Studio และตรวจสอบข้อจำกัดของ Key';
+                if (status === 401 || /authentication|unauthenticated|invalid.*key|no auth credentials/i.test(rawMsg)) {
+                    errorMsg = 'API Key ของ OpenRouter ใช้งานไม่ได้ กรุณาตรวจสอบ Key ใหม่ที่ https://openrouter.ai/keys';
                     retryable = false; // ปัญหาที่ตัว Key เอง ลองโมเดลอื่นก็ไม่ช่วย
-                } else if (res.status === 429 || /quota|rate limit|resource_exhausted/i.test(rawMsg)) {
-                    errorMsg = `⏳ โมเดล "${modelPath.replace(/^models\//, '')}" ใช้งานเกินโควต้าต่อนาที กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                } else if (status === 402 || /credit|insufficient|payment required/i.test(rawMsg)) {
+                    errorMsg = `💳 บัญชี OpenRouter เครดิตไม่พอสำหรับโมเดล "${modelId}" กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
                     retryable = true;
-                } else if (res.status === 404 || res.status === 400 || /not found|is not supported for|not available/i.test(rawMsg)) {
-                    errorMsg = `โมเดล "${modelPath.replace(/^models\//, '')}" ไม่รองรับสำหรับ API Key นี้ กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                } else if (status === 429 || /quota|rate limit|resource_exhausted/i.test(rawMsg)) {
+                    errorMsg = `⏳ โมเดล "${modelId}" ใช้งานเกินโควต้าต่อนาที กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
                     retryable = true;
-                } else if (res.status >= 500) {
-                    errorMsg = `เซิร์ฟเวอร์ AI ขัดข้องชั่วคราว (โมเดล "${modelPath.replace(/^models\//, '')}") กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                } else if (status === 404 || status === 400 || /not found|is not supported for|no endpoints found|not available/i.test(rawMsg)) {
+                    errorMsg = `โมเดล "${modelId}" ไม่รองรับสำหรับ API Key นี้ กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
                     retryable = true;
+                } else if (status >= 500) {
+                    errorMsg = `เซิร์ฟเวอร์ AI ขัดข้องชั่วคราว (โมเดล "${modelId}") กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                    retryable = true;
+                } else {
+                    retryable = true; // ไม่แน่ใจสาเหตุ ลองโมเดลอื่นดูก่อนดีกว่ายอมแพ้ทันที
                 }
 
                 const e = new Error(errorMsg);
@@ -769,10 +763,7 @@
                 throw e;
             }
 
-            const rawText = result.candidates?.[0]?.content?.parts
-                ?.map(part => part.text || '')
-                .join('')
-                .trim();
+            const rawText = result.choices?.[0]?.message?.content?.trim();
 
             if (!rawText) {
                 const e = new Error('AI ไม่ได้ส่งผลการวิเคราะห์กลับมา กำลังลองโมเดลอื่นให้อัตโนมัติ...');
@@ -784,7 +775,7 @@
             try {
                 analysis = JSON.parse(rawText);
             } catch (parseError) {
-                // รองรับกรณี API ครอบ JSON ด้วย ```json ... ``` แม้ไม่ได้ร้องขอ
+                // รองรับกรณีโมเดลครอบ JSON ด้วย ```json ... ``` แม้ไม่ได้ร้องขอ
                 const cleaned = rawText
                     .replace(/^```json\s*/i, '')
                     .replace(/^```\s*/i, '')
@@ -847,6 +838,16 @@
 11. ห้ามตอบเป็น Markdown ห้ามใส่เครื่องหมาย * หรือ # และห้ามตัดข้อความกลางประโยค
 12. ข้อความทุกช่องต้องเป็นภาษาไทย อ่านง่าย กระชับ และไม่แต่งข้อมูลที่มองไม่เห็น
 
+ตอบกลับเป็น JSON object เท่านั้น (ห้ามมีข้อความอื่นนอก JSON) ตาม schema นี้เป๊ะๆ:
+{
+  "isWaste": boolean,
+  "objectName": string,
+  "category": "อินทรีย์" | "รีไซเคิล" | "ทั่วไป" | "อันตราย" | "ไม่ใช่ขยะ",
+  "binColor": string,
+  "disposalMethods": string[] (2 ถึง 4 ข้อ),
+  "reuse": string
+}
+
 ต้องให้ข้อมูลครบทุกช่องใน schema เสมอ`;
 
             try {
@@ -881,7 +882,7 @@
                 }
 
                 if (!analysis) {
-                    throw lastError || new Error('ไม่พบโมเดล AI ที่ใช้งานได้กับ API Key นี้ กรุณาตรวจสอบ Key ใน Google AI Studio');
+                    throw lastError || new Error('ไม่พบโมเดล AI ที่ใช้งานได้กับ API Key นี้ กรุณาตรวจสอบ Key และเครดิตที่ https://openrouter.ai/keys');
                 }
 
                 console.log('📊 Model used:', selectedModel);
