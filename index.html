@@ -335,9 +335,13 @@
         // ============= CONFIG =============
         const API_KEY = "AQ.Ab8RN6J-Nf2cOPfDAYqM2mQ408t89YNvqyXvS2SqmRB4WGcwhA"; // แนะนำ: หากใช้งานจริงบนเซิร์ฟเวอร์ ควรซ่อน API Key ไว้ที่ Backend
         
-        // Model preference order
+        // Model preference order (ตัวแรกคือโมเดลที่ยืนยันแล้วว่าใช้กับ API Key นี้ได้)
         const MODEL_PRIORITY = [
-            'gemini-3.7-flash'
+            'gemini-2.5-flash',
+            'gemini-3.7-flash',
+            'gemini-3.6-flash',
+            'gemini-3.5-flash',
+            'gemini-2.0-flash'
         ];
 
         // ============= STATE =============
@@ -546,11 +550,13 @@
         async function findBestModel() {
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models`;
-                const res = await fetch(url);
+                const res = await fetch(url, {
+                    headers: { 'x-goog-api-key': API_KEY }
+                });
                 const data = await res.json();
 
-                if (data.error) {
-                    throw new Error(data.error.message);
+                if (!res.ok || data.error) {
+                    throw new Error(data.error?.message || 'ไม่สามารถดึงรายชื่อโมเดลได้');
                 }
 
                 const models = data.models || [];
@@ -574,18 +580,19 @@
                     }
                 }
 
-                // Last resort: choose a current Gemini 3.x model that supports generateContent.
+                // Last resort: choose any current Gemini flash model that supports generateContent.
                 const currentModel = available.find(m => {
                     const id = m.name.replace(/^models\//, '');
-                    return /^gemini-3\./.test(id);
+                    return /^gemini-(2|3)\.\d.*flash/.test(id);
                 });
 
                 if (currentModel) return currentModel.name;
 
-                throw new Error('ไม่พบโมเดล Gemini 3.x ที่รองรับ generateContent สำหรับ API Key นี้');
+                // Absolute last resort: just take the first available model.
+                return available[0].name;
             } catch (err) {
-                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้ จะใช้โมเดลสำรอง (gemini-3.6-flash):', err.message);
-                return 'models/gemini-3.7-flash'; // Current documented fallback
+                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้ จะใช้โมเดลสำรอง (gemini-2.5-flash):', err.message);
+                return 'models/gemini-2.5-flash'; // Known-working fallback for this API key
             }
         }
 
@@ -677,6 +684,10 @@
                     let errorMsg = result.error?.message || 'API Error';
                     if (res.status === 401 || /authentication|unauthenticated|credential|api key/i.test(errorMsg)) {
                         errorMsg = 'API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์ กรุณาสร้าง/ตรวจสอบ Gemini API Key ใหม่ใน Google AI Studio และตรวจสอบข้อจำกัดของ Key';
+                    } else if (res.status === 429 || /quota|rate limit|resource_exhausted/i.test(errorMsg)) {
+                        errorMsg = '⏳ ใช้งานเกินโควต้าต่อนาทีของ API Key นี้ กรุณารอสักครู่ (ประมาณ 1 นาที) แล้วลองกดวิเคราะห์อีกครั้ง';
+                    } else if (res.status === 404 || /not found|is not supported for/i.test(errorMsg)) {
+                        errorMsg = `โมเดล "${selectedModel}" ไม่รองรับสำหรับ API Key นี้ กรุณาลองใหม่อีกครั้ง (ระบบจะเลือกโมเดลอื่นให้อัตโนมัติ)`;
                     }
 
                     if (/no longer available to new users/i.test(errorMsg)) {
