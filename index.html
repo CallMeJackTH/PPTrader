@@ -338,7 +338,7 @@
 
     <script>
         // ============= CONFIG =============
-        const API_KEY = "AQ.Ab8RN6IHr4BLG49Jc-pqzmZyhBchKb-F9qaHX_XvnJpREEnKqg"; // แนะนำ: หากใช้งานจริงบนเซิร์ฟเวอร์ ควรซ่อน API Key ไว้ที่ Backend
+        const API_KEY = "AQ.Ab8RN6J2xg51nj5bFnl-w_abxe6Z6cg2mchMr-KJBRPS6yZBSA"; // แนะนำ: หากใช้งานจริงบนเซิร์ฟเวอร์ ควรซ่อน API Key ไว้ที่ Backend
         
         // Model preference order (ตัวแรกคือโมเดลที่ยืนยันแล้วว่าใช้กับ API Key นี้ได้)
         const MODEL_PRIORITY = [
@@ -647,108 +647,69 @@
         }
 
         // ============= API FUNCTIONS =============
-        async function findBestModel() {
+        // คืนรายชื่อโมเดลที่ "น่าจะ" ใช้ได้กับ API Key นี้ เรียงตามลำดับที่ควรลองก่อน
+        // ใช้สำหรับลองไล่ทีละโมเดลอัตโนมัติ เผื่อบางโมเดลใช้กับคีย์นี้ไม่ได้ (เช่น 404 / ไม่มีสิทธิ์)
+        async function buildModelCandidates() {
+            const candidates = []; // เก็บชื่อแบบเต็ม "models/xxx" ไม่ซ้ำ
+            const seen = new Set();
+            const addCandidate = name => {
+                if (!name) return;
+                const full = name.startsWith('models/') ? name : `models/${name}`;
+                if (!seen.has(full)) {
+                    seen.add(full);
+                    candidates.push(full);
+                }
+            };
+
+            let available = [];
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models`;
-                const res = await fetch(url, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
                     headers: { 'x-goog-api-key': API_KEY }
                 });
                 const data = await res.json();
-
-                if (!res.ok || data.error) {
-                    throw new Error(data.error?.message || 'ไม่สามารถดึงรายชื่อโมเดลได้');
+                if (res.ok && !data.error) {
+                    available = (data.models || []).filter(m =>
+                        m.supportedGenerationMethods?.includes('generateContent')
+                    );
                 }
-
-                const models = data.models || [];
-                const available = models.filter(m => 
-                    m.supportedGenerationMethods?.includes('generateContent')
-                );
-
-                if (available.length === 0) {
-                    throw new Error('ไม่พบโมเดลที่ใช้ได้');
-                }
-
-                // Find best current model by priority.
-                // Prefer exact model IDs so an older/deprecated model cannot win by accident.
-                for (const priority of MODEL_PRIORITY) {
-                    const match = available.find(m => {
-                        const id = m.name.replace(/^models\//, '');
-                        return id === priority;
-                    });
-                    if (match) {
-                        return match.name;
-                    }
-                }
-
-                // Last resort: choose any current Gemini flash model that supports generateContent.
-                const currentModel = available.find(m => {
-                    const id = m.name.replace(/^models\//, '');
-                    return /^gemini-(2|3)\.\d.*flash/.test(id);
-                });
-
-                if (currentModel) return currentModel.name;
-
-                // Absolute last resort: just take the first available model.
-                return available[0].name;
-            } catch (err) {
-                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้ จะใช้โมเดลสำรอง (gemini-2.5-flash):', err.message);
-                return 'models/gemini-2.5-flash'; // Known-working fallback for this API key
+            } catch (e) {
+                console.warn('⚠️ ไม่สามารถดึงรายชื่อโมเดลได้:', e.message);
             }
+
+            // 1) โมเดลที่อยู่ในลิสต์ความสำคัญ และมีอยู่จริงในรายการที่ API Key นี้เข้าถึงได้
+            for (const priority of MODEL_PRIORITY) {
+                const match = available.find(m => m.name.replace(/^models\//, '') === priority);
+                if (match) addCandidate(match.name);
+            }
+
+            // 2) โมเดลตระกูล flash อื่นๆ ที่ API Key นี้เข้าถึงได้ (เผื่อโมเดลใน MODEL_PRIORITY ใช้ไม่ได้จริง)
+            available
+                .filter(m => /gemini-(2|3)\.\d.*flash/.test(m.name))
+                .forEach(m => addCandidate(m.name));
+
+            // 3) รายชื่อโมเดลสำรองแบบ hard-code เผื่อดึงลิสต์จาก API ไม่สำเร็จเลย
+            MODEL_PRIORITY.forEach(addCandidate);
+            ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+                .forEach(addCandidate);
+
+            return candidates;
         }
 
-        // ============= MAIN ANALYSIS =============
-        analyzeBtn.addEventListener('click', async () => {
-            if (!base64Image) return;
+        // เรียก Gemini กับโมเดลที่ระบุ 1 ครั้ง คืนค่าผลวิเคราะห์ที่ผ่านการตรวจสอบแล้ว
+        // โยน error พร้อม .retryable=true หากควรลองโมเดลถัดไปแทนที่จะเลิกทันที
+        async function callGeminiModel(modelPath, prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent`;
 
-            analyzeBtn.disabled = true;
-            resultCard.classList.add('hidden');
-            hideError();
-            loader.classList.remove('hidden');
-
+            let res, result;
             try {
-                // Find best model
-                loaderText.textContent = '🔍 ค้นหาโมเดล AI ที่เหมาะสม...';
-                selectedModel = await findBestModel();
-                console.log('📊 Selected model:', selectedModel);
-
-                // Prepare analysis
-                // ใช้ Structured Output (JSON) แทนการบังคับ Markdown
-                // เพื่อป้องกันข้อความหาย/หัวข้อหาย/รูปแบบเพี้ยนบนมือถือ
-                const prompt = `ตรวจสอบภาพที่แนบมาเพื่อคัดกรอง "ขยะ" ก่อน แล้วตอบเป็น JSON ตาม schema ที่กำหนดเท่านั้น
-
-กติกาสำคัญ:
-1. ขั้นแรกต้องตัดสินก่อนว่าภาพมีขยะหรือไม่
-2. ถ้าในภาพมีขยะ ให้สนใจและวิเคราะห์เฉพาะวัตถุที่เป็นขยะเท่านั้น ห้ามนำคน สัตว์ พื้น โต๊ะ อาคาร เครื่องใช้ที่กำลังใช้งาน หรือสิ่งของที่ไม่ใช่ขยะมาวิเคราะห์เป็นขยะ
-3. ถ้ามีหลายวัตถุ ให้เลือกวัตถุที่เป็นขยะเด่นที่สุดและระบุชื่อให้ชัดเจน
-4. ถ้าภาพไม่มีขยะ หรือสิ่งที่เห็นไม่ใช่ขยะ ให้ตั้ง isWaste=false และตอบว่า "ในรูปไม่ใช่ขยะ" พร้อมแนะนำให้ผู้ใช้หาวัตถุที่เป็นขยะมาถ่ายใหม่
-5. ถ้าไม่แน่ใจว่าวัตถุนั้นเป็นขยะหรือไม่ ให้ถือว่ายังตรวจไม่พบขยะ และแนะนำให้ถ่ายวัตถุให้ชัดขึ้น
-6. เมื่อ isWaste=true ให้เลือกประเภทได้เพียง: อินทรีย์, รีไซเคิล, ทั่วไป, อันตราย
-7. เมื่อ isWaste=true ให้ระบุสีถังขยะที่เหมาะสมสำหรับประเทศไทย
-8. เมื่อ isWaste=true วิธีจัดการต้องมีอย่างน้อย 2 ข้อ และไม่เกิน 4 ข้อ
-9. เมื่อ isWaste=true การนำไปใช้ต่อให้ระบุวิธีรีไซเคิล/ใช้ซ้ำที่เหมาะสม ถ้าใช้ต่อไม่ได้ให้บอกว่าไม่ควรนำกลับมาใช้
-10. เมื่อ isWaste=false ให้ใช้ category="ไม่ใช่ขยะ", binColor="ไม่ต้องทิ้งลงถัง", disposalMethods เป็นคำแนะนำให้ถ่ายวัตถุใหม่ 2-3 ข้อ และ reuse อธิบายว่าไม่ควรวิเคราะห์ภาพนี้เป็นขยะ
-11. ห้ามตอบเป็น Markdown ห้ามใส่เครื่องหมาย * หรือ # และห้ามตัดข้อความกลางประโยค
-12. ข้อความทุกช่องต้องเป็นภาษาไทย อ่านง่าย กระชับ และไม่แต่งข้อมูลที่มองไม่เห็น
-
-ต้องให้ข้อมูลครบทุกช่องใน schema เสมอ`;
-
-                // จัดการกรณีที่ชื่อโมเดลอาจจะไม่มี 'models/' นำหน้า
-                const modelPath = selectedModel.startsWith('models/') ? selectedModel : `models/${selectedModel}`;
-                const url = `https://generativelanguage.googleapis.com/v1beta/${modelPath}:generateContent`;
-
-                const res = await fetch(url, {
+                res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': API_KEY },
                     body: JSON.stringify({
                         contents: [{
                             parts: [
                                 { text: prompt },
-                                {
-                                    inline_data: {
-                                        mime_type: imageMimeType,
-                                        data: base64Image
-                                    }
-                                }
+                                { inline_data: { mime_type: imageMimeType, data: base64Image } }
                             ]
                         }],
                         generationConfig: {
@@ -777,71 +738,153 @@
                         }
                     })
                 });
+                result = await res.json();
+            } catch (networkErr) {
+                const e = new Error('⚠️ เชื่อมต่อกับ AI ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+                e.retryable = false;
+                throw e;
+            }
 
-                const result = await res.json();
+            if (!res.ok) {
+                const rawMsg = result.error?.message || 'API Error';
+                let errorMsg = rawMsg;
+                let retryable = false;
 
-                if (!res.ok) {
-                    let errorMsg = result.error?.message || 'API Error';
-                    if (res.status === 401 || /authentication|unauthenticated|credential|api key/i.test(errorMsg)) {
-                        errorMsg = 'API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์ กรุณาสร้าง/ตรวจสอบ Gemini API Key ใหม่ใน Google AI Studio และตรวจสอบข้อจำกัดของ Key';
-                    } else if (res.status === 429 || /quota|rate limit|resource_exhausted/i.test(errorMsg)) {
-                        errorMsg = '⏳ ใช้งานเกินโควต้าต่อนาทีของ API Key นี้ กรุณารอสักครู่ (ประมาณ 1 นาที) แล้วลองกดวิเคราะห์อีกครั้ง';
-                    } else if (res.status === 404 || /not found|is not supported for/i.test(errorMsg)) {
-                        errorMsg = `โมเดล "${selectedModel}" ไม่รองรับสำหรับ API Key นี้ กรุณาลองใหม่อีกครั้ง (ระบบจะเลือกโมเดลอื่นให้อัตโนมัติ)`;
-                    }
-
-                    if (/no longer available to new users/i.test(errorMsg)) {
-                        errorMsg += ' — กรุณาตรวจสอบว่า API Key และ Project มีสิทธิ์ใช้โมเดลที่เลือก';
-                    }
-
-                    throw new Error(errorMsg);
+                if (res.status === 401 || /authentication|unauthenticated|credential|api key/i.test(rawMsg)) {
+                    errorMsg = 'API Key ใช้งานไม่ได้หรือไม่มีสิทธิ์ กรุณาสร้าง/ตรวจสอบ Gemini API Key ใหม่ใน Google AI Studio และตรวจสอบข้อจำกัดของ Key';
+                    retryable = false; // ปัญหาที่ตัว Key เอง ลองโมเดลอื่นก็ไม่ช่วย
+                } else if (res.status === 429 || /quota|rate limit|resource_exhausted/i.test(rawMsg)) {
+                    errorMsg = `⏳ โมเดล "${modelPath.replace(/^models\//, '')}" ใช้งานเกินโควต้าต่อนาที กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                    retryable = true;
+                } else if (res.status === 404 || res.status === 400 || /not found|is not supported for|not available/i.test(rawMsg)) {
+                    errorMsg = `โมเดล "${modelPath.replace(/^models\//, '')}" ไม่รองรับสำหรับ API Key นี้ กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                    retryable = true;
+                } else if (res.status >= 500) {
+                    errorMsg = `เซิร์ฟเวอร์ AI ขัดข้องชั่วคราว (โมเดล "${modelPath.replace(/^models\//, '')}") กำลังลองโมเดลอื่นให้อัตโนมัติ...`;
+                    retryable = true;
                 }
 
-                const rawText = result.candidates?.[0]?.content?.parts
-                    ?.map(part => part.text || '')
-                    .join('')
+                const e = new Error(errorMsg);
+                e.retryable = retryable;
+                throw e;
+            }
+
+            const rawText = result.candidates?.[0]?.content?.parts
+                ?.map(part => part.text || '')
+                .join('')
+                .trim();
+
+            if (!rawText) {
+                const e = new Error('AI ไม่ได้ส่งผลการวิเคราะห์กลับมา กำลังลองโมเดลอื่นให้อัตโนมัติ...');
+                e.retryable = true;
+                throw e;
+            }
+
+            let analysis;
+            try {
+                analysis = JSON.parse(rawText);
+            } catch (parseError) {
+                // รองรับกรณี API ครอบ JSON ด้วย ```json ... ``` แม้ไม่ได้ร้องขอ
+                const cleaned = rawText
+                    .replace(/^```json\s*/i, '')
+                    .replace(/^```\s*/i, '')
+                    .replace(/\s*```$/i, '')
                     .trim();
-
-                if (!rawText) {
-                    throw new Error('AI ไม่ได้ส่งผลการวิเคราะห์กลับมา กรุณาลองใหม่อีกครั้ง');
-                }
-
-                let analysis;
                 try {
-                    analysis = JSON.parse(rawText);
-                } catch (parseError) {
-                    // รองรับกรณี API ครอบ JSON ด้วย ```json ... ``` แม้ไม่ได้ร้องขอ
-                    const cleaned = rawText
-                        .replace(/^```json\s*/i, '')
-                        .replace(/^```\s*/i, '')
-                        .replace(/\s*```$/i, '')
-                        .trim();
+                    analysis = JSON.parse(cleaned);
+                } catch (e2) {
+                    const e = new Error('AI ส่งข้อมูลผิดรูปแบบ กำลังลองโมเดลอื่นให้อัตโนมัติ...');
+                    e.retryable = true;
+                    throw e;
+                }
+            }
+
+            const methods = Array.isArray(analysis.disposalMethods)
+                ? analysis.disposalMethods.filter(v => typeof v === 'string' && v.trim())
+                : [];
+
+            if (typeof analysis.isWaste !== 'boolean' ||
+                !analysis.objectName ||
+                !analysis.category ||
+                !analysis.binColor ||
+                methods.length < 2 ||
+                !analysis.reuse) {
+                const e = new Error('AI ส่งข้อมูลมาไม่ครบ กำลังลองโมเดลอื่นให้อัตโนมัติ...');
+                e.retryable = true;
+                throw e;
+            }
+
+            if (!analysis.isWaste) {
+                analysis.category = 'ไม่ใช่ขยะ';
+                analysis.binColor = 'ไม่ต้องทิ้งลงถัง';
+            }
+
+            return { analysis, methods };
+        }
+
+        // ============= MAIN ANALYSIS =============
+        analyzeBtn.addEventListener('click', async () => {
+            if (!base64Image) return;
+
+            analyzeBtn.disabled = true;
+            resultCard.classList.add('hidden');
+            hideError();
+            loader.classList.remove('hidden');
+
+            const prompt = `ตรวจสอบภาพที่แนบมาเพื่อคัดกรอง "ขยะ" ก่อน แล้วตอบเป็น JSON ตาม schema ที่กำหนดเท่านั้น
+
+กติกาสำคัญ:
+1. ขั้นแรกต้องตัดสินก่อนว่าภาพมีขยะหรือไม่
+2. ถ้าในภาพมีขยะ ให้สนใจและวิเคราะห์เฉพาะวัตถุที่เป็นขยะเท่านั้น ห้ามนำคน สัตว์ พื้น โต๊ะ อาคาร เครื่องใช้ที่กำลังใช้งาน หรือสิ่งของที่ไม่ใช่ขยะมาวิเคราะห์เป็นขยะ
+3. ถ้ามีหลายวัตถุ ให้เลือกวัตถุที่เป็นขยะเด่นที่สุดและระบุชื่อให้ชัดเจน
+4. ถ้าภาพไม่มีขยะ หรือสิ่งที่เห็นไม่ใช่ขยะ ให้ตั้ง isWaste=false และตอบว่า "ในรูปไม่ใช่ขยะ" พร้อมแนะนำให้ผู้ใช้หาวัตถุที่เป็นขยะมาถ่ายใหม่
+5. ถ้าไม่แน่ใจว่าวัตถุนั้นเป็นขยะหรือไม่ ให้ถือว่ายังตรวจไม่พบขยะ และแนะนำให้ถ่ายวัตถุให้ชัดขึ้น
+6. เมื่อ isWaste=true ให้เลือกประเภทได้เพียง: อินทรีย์, รีไซเคิล, ทั่วไป, อันตราย
+7. เมื่อ isWaste=true ให้ระบุสีถังขยะที่เหมาะสมสำหรับประเทศไทย
+8. เมื่อ isWaste=true วิธีจัดการต้องมีอย่างน้อย 2 ข้อ และไม่เกิน 4 ข้อ
+9. เมื่อ isWaste=true การนำไปใช้ต่อให้ระบุวิธีรีไซเคิล/ใช้ซ้ำที่เหมาะสม ถ้าใช้ต่อไม่ได้ให้บอกว่าไม่ควรนำกลับมาใช้
+10. เมื่อ isWaste=false ให้ใช้ category="ไม่ใช่ขยะ", binColor="ไม่ต้องทิ้งลงถัง", disposalMethods เป็นคำแนะนำให้ถ่ายวัตถุใหม่ 2-3 ข้อ และ reuse อธิบายว่าไม่ควรวิเคราะห์ภาพนี้เป็นขยะ
+11. ห้ามตอบเป็น Markdown ห้ามใส่เครื่องหมาย * หรือ # และห้ามตัดข้อความกลางประโยค
+12. ข้อความทุกช่องต้องเป็นภาษาไทย อ่านง่าย กระชับ และไม่แต่งข้อมูลที่มองไม่เห็น
+
+ต้องให้ข้อมูลครบทุกช่องใน schema เสมอ`;
+
+            try {
+                loaderText.textContent = '🔍 ค้นหาโมเดล AI ที่เหมาะสม...';
+                const candidates = await buildModelCandidates();
+
+                let analysis = null, methods = null, lastError = null;
+
+                for (let i = 0; i < candidates.length; i++) {
+                    const modelPath = candidates[i];
+                    selectedModel = modelPath;
+                    const shortName = modelPath.replace(/^models\//, '');
+                    loaderText.textContent = candidates.length > 1
+                        ? `🤖 กำลังวิเคราะห์ด้วย ${shortName} (${i + 1}/${candidates.length})...`
+                        : `🤖 กำลังวิเคราะห์ด้วย ${shortName}...`;
+
                     try {
-                        analysis = JSON.parse(cleaned);
-                    } catch (e) {
-                        throw new Error('AI ส่งข้อมูลผิดรูปแบบ กรุณากดวิเคราะห์อีกครั้ง');
+                        const out = await callGeminiModel(modelPath, prompt);
+                        analysis = out.analysis;
+                        methods = out.methods;
+                        lastError = null;
+                        break;
+                    } catch (err) {
+                        console.warn(`⚠️ โมเดล ${shortName} ใช้ไม่ได้:`, err.message);
+                        lastError = err;
+                        if (!err.retryable) break; // ปัญหาที่ Key เอง ลองโมเดลอื่นก็ไม่ช่วย ให้หยุดทันที
+                        if (err.retryable && /โควต้า/.test(err.message)) {
+                            loaderText.textContent = err.message;
+                        }
+                        continue; // ลองโมเดลถัดไป
                     }
                 }
 
-                // ตรวจสอบข้อมูลก่อนแสดงผล
-                const methods = Array.isArray(analysis.disposalMethods)
-                    ? analysis.disposalMethods.filter(v => typeof v === 'string' && v.trim())
-                    : [];
-
-                if (typeof analysis.isWaste !== 'boolean' ||
-                    !analysis.objectName ||
-                    !analysis.category ||
-                    !analysis.binColor ||
-                    methods.length < 2 ||
-                    !analysis.reuse) {
-                    throw new Error('AI ส่งข้อมูลมาไม่ครบ กรุณากดวิเคราะห์อีกครั้ง');
+                if (!analysis) {
+                    throw lastError || new Error('ไม่พบโมเดล AI ที่ใช้งานได้กับ API Key นี้ กรุณาตรวจสอบ Key ใน Google AI Studio');
                 }
 
-                // ป้องกัน AI เผลอวิเคราะห์สิ่งที่ไม่ใช่ขยะ
-                if (!analysis.isWaste) {
-                    analysis.category = 'ไม่ใช่ขยะ';
-                    analysis.binColor = 'ไม่ต้องทิ้งลงถัง';
-                }
+                console.log('📊 Model used:', selectedModel);
 
                 // สร้าง HTML เองแทน marked เพื่อให้ข้อความภาษาไทยไม่ถูกตัด/แปลงรูปแบบผิด
                 const escapeHTML = value => String(value)
