@@ -297,15 +297,15 @@
         viewBtns.desktop.addEventListener('click', () => setViewMode('desktop'));
 
 
-        // ============= CONFIG (อัปเดต API และกำหนดเป็น Llama) =============
+        // ============= CONFIG (อัปเดตใช้ BazaarLink) =============
         const API_KEY = "Sk-bl-KbeUnO7Ds4r4kXZnZDgnuxaRa_TGd9kMVZTAUtxSe5DuioeC";
-        const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+        const API_BASE_URL = "https://api.bazaarlink.ai/v1";
         
-        // ใช้ Llama Vision (Free) บน OpenRouter ที่สามารถดูรูปได้ 
+        // ใช้โหมด auto:free หรือ Llama Vision ของทางฝั่ง BazaarLink
         const MODEL_PRIORITY = [
-            'meta-llama/llama-3.2-90b-vision-instruct:free',
-            'meta-llama/llama-3.2-11b-vision-instruct:free',
-            'meta-llama/llama-3.2-11b-vision-instruct' // สำรองกรณี free ปิด
+            'auto:free',
+            'meta-llama/llama-3.2-90b-vision-instruct',
+            'meta-llama/llama-3.2-11b-vision-instruct'
         ];
 
         // ============= STATE & DOM =============
@@ -442,7 +442,6 @@
             analyzeBtn.disabled = true; resultArea.classList.add('hidden'); hideError();
             loader.classList.remove('hidden'); loader.classList.add('flex');
 
-            // ปรับ Prompt สำหรับ Llama ให้เคร่งครัดเรื่องการตอบแต่ JSON
             const prompt = `ตรวจสอบภาพคัดกรองขยะ. ตอบกลับด้วย JSON เท่านั้น ห้ามมีข้อความอื่นหรือ Markdown เด็ดขาด:
             { "isWaste": boolean, "objectName": string, "category": "อินทรีย์" | "รีไซเคิล" | "ทั่วไป" | "อันตราย" | "ไม่ใช่ขยะ", "binColor": string, "disposalMethods": string[], "reuse": string }`;
 
@@ -450,7 +449,7 @@
                 let resultData = null;
                 for (const model of MODEL_PRIORITY) {
                     try {
-                        const res = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+                        const res = await fetch(`${API_BASE_URL}/chat/completions`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
                             body: JSON.stringify({
@@ -466,7 +465,7 @@
                         }
                         
                         const jsonText = (await res.json()).choices[0].message.content.trim();
-                        // ดึงเฉพาะส่วนที่อยู่ระหว่าง {} เพื่อลบ markdown หรือคำเกริ่นของ Llama
+                        // ดึงเฉพาะส่วนที่เป็น JSON เพื่อป้องกัน Llama ตอบข้อความอื่นแทรก
                         const cleanJson = jsonText.substring(jsonText.indexOf('{'), jsonText.lastIndexOf('}') + 1);
                         resultData = JSON.parse(cleanJson);
                         break;
