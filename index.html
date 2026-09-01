@@ -300,12 +300,12 @@
         const API_KEY = "Sk-bl-KbeUnO7Ds4r4kXZnZDgnuxaRa_TGd9kMVZTAUtxSe5DuioeC";
         const API_BASE_URL = "https://api.bazaarlink.ai/v1";
         
+        // ใช้ Vision Models เกรดสูงเพื่อความแม่นยำสูงสุด
         const MODEL_PRIORITY = [
-            'auto:free',
-            'gpt-4o-mini',
             'gpt-4o',
+            'gpt-4o-mini',
             'meta-llama/llama-3.2-90b-vision-instruct',
-            'meta-llama/llama-3.2-11b-vision-instruct'
+            'auto:free'
         ];
 
         // ============= STATE & DOM =============
@@ -440,12 +440,22 @@
         analyzeBtn.addEventListener('click', async () => {
             if (!base64Image) return;
             analyzeBtn.disabled = true; resultArea.classList.add('hidden'); hideError();
+            loader.classList.add('hidden'); // ซ่อนก่อน
             loader.classList.remove('hidden'); loader.classList.add('flex');
 
-            const prompt = `ตรวจสอบภาพคัดกรองขยะ. ตอบกลับด้วย JSON เท่านั้น ห้ามมีข้อความอื่นหรือ Markdown เด็ดขาด:
-            { "isWaste": boolean, "objectName": string, "category": "อินทรีย์" | "รีไซเคิล" | "ทั่วไป" | "อันตราย" | "ไม่ใช่ขยะ", "binColor": string, "disposalMethods": string[], "reuse": string }`;
+            const prompt = `คุณคือผู้เชี่ยวชาญด้านการคัดแยกขยะและวัสดุสิ่งของ กรุณาวิเคราะห์รูปภาพนี้อย่างละเอียดตรงตามความเป็นจริง (เช่น หากเป็นผ้าขี้ริ้ว เสื้อผ้าเก่า ผ้าเปื้อน เศษวัสดุ หรือขยะประเภทต่างๆ ให้ระบุชื่อวัตถุตามภาพจริง ห้ามเดાส่งเดช) 
+            ตอบกลับในรูปแบบ JSON เท่านั้น ห้ามมีข้อความอื่นหรือ Markdown เด็ดขาด โดยใช้โครงสร้างนี้:
+            { 
+              "isWaste": boolean, 
+              "objectName": "ชื่อวัตถุในภาพตามจริงภาษาไทย", 
+              "category": "อินทรีย์" | "รีไซเคิล" | "ทั่วไป" | "อันตราย" | "ไม่ใช่ขยะ", 
+              "binColor": "ระบุสีถังขยะ เช่น ถังขยะสีน้ำเงิน (ขยะทั่วไป)", 
+              "disposalMethods": ["วิธีจัดการที่ 1", "วิธีจัดการที่ 2"], 
+              "reuse": "ข้อเสนอแนะในการนำกลับมาใช้ซ้ำหรือวิธีทิ้งที่เหมาะสม" 
+            }`;
 
             let resultData = null;
+            let lastErrorMsg = '';
 
             try {
                 for (const model of MODEL_PRIORITY) {
@@ -470,8 +480,8 @@
                         });
                         
                         if (!res.ok) {
-                            const errDetail = await res.text();
-                            console.warn(`Model ${model} failed with status ${res.status}:`, errDetail);
+                            lastErrorMsg = await res.text();
+                            console.warn(`Model ${model} failed with status ${res.status}:`, lastErrorMsg);
                             continue;
                         }
                         
@@ -489,25 +499,13 @@
                     }
                 }
                 
-                // Fallback Mock Data หาก API ขัดข้องหรือเครือข่ายมีปัญหา
                 if (!resultData) {
-                    console.warn("API Error or Invalid Key. Using fallback mock data.");
-                    resultData = {
-                        isWaste: true,
-                        objectName: "วัตถุหรือกระดาษจากภาพถ่าย",
-                        category: "ทั่วไป",
-                        binColor: "ถังขยะสีน้ำเงิน (ขยะทั่วไป)",
-                        disposalMethods: [
-                            "1. รวบรวมให้เรียบร้อยก่อนทิ้ง",
-                            "2. ทิ้งลงในถังขยะทั่วไปหรือถังรองรับมูลฝอย"
-                        ],
-                        reuse: "ควรตรวจสอบว่าสามารถนำกลับมาซ่อมแซมหรือเช็ดทำความสะอาดเพื่อใช้ประโยชน์ต่อได้หรือไม่"
-                    };
+                    throw new Error("ไม่สามารถเชื่อมต่อโมเดล AI ได้ หรือโควต้า/คีย์อาจมีปัญหา: " + lastErrorMsg);
                 }
 
                 renderResult(resultData);
             } catch (err) { 
-                showError("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ AI: " + err.message); 
+                showError("เกิดข้อผิดพลาด: " + err.message); 
                 analyzeBtn.disabled = false; 
             } finally { 
                 loader.classList.add('hidden'); 
@@ -518,7 +516,7 @@
         function renderResult(data) {
             const isW = data.isWaste !== false && data.category !== 'ไม่ใช่ขยะ';
             const headerColor = isW ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
-            const icon = isW ? '♻️ ตรวจพบขยะ' : 'ℹ️ ไม่ใช่ขยะ';
+            const icon = isW ? '♻️ ผลการวิเคราะห์ขยะ' : 'ℹ️ ผลการตรวจสอบ';
             const binColor = data.binColor || '-';
             const methodsHTML = Array.isArray(data.disposalMethods) ? data.disposalMethods.map(m => `<li class="flex gap-2"><span class="text-emerald-500">✓</span><span>${m}</span></li>`).join('') : '';
 
