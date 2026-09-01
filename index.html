@@ -297,10 +297,16 @@
         viewBtns.desktop.addEventListener('click', () => setViewMode('desktop'));
 
 
-        // ============= CONFIG =============
-        const API_KEY = "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";
+        // ============= CONFIG (อัปเดต API และกำหนดเป็น Llama) =============
+        const API_KEY = "Sk-bl-KbeUnO7Ds4r4kXZnZDgnuxaRa_TGd9kMVZTAUtxSe5DuioeC";
         const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-        const MODEL_PRIORITY = ['google/gemini-2.5-flash', 'google/gemini-2.0-flash-001', 'openai/gpt-4o-mini'];
+        
+        // ใช้ Llama Vision (Free) บน OpenRouter ที่สามารถดูรูปได้ 
+        const MODEL_PRIORITY = [
+            'meta-llama/llama-3.2-90b-vision-instruct:free',
+            'meta-llama/llama-3.2-11b-vision-instruct:free',
+            'meta-llama/llama-3.2-11b-vision-instruct' // สำรองกรณี free ปิด
+        ];
 
         // ============= STATE & DOM =============
         let base64Image = null;
@@ -436,7 +442,8 @@
             analyzeBtn.disabled = true; resultArea.classList.add('hidden'); hideError();
             loader.classList.remove('hidden'); loader.classList.add('flex');
 
-            const prompt = `ตรวจสอบภาพคัดกรองขยะ. ตอบ JSON เท่านั้น:
+            // ปรับ Prompt สำหรับ Llama ให้เคร่งครัดเรื่องการตอบแต่ JSON
+            const prompt = `ตรวจสอบภาพคัดกรองขยะ. ตอบกลับด้วย JSON เท่านั้น ห้ามมีข้อความอื่นหรือ Markdown เด็ดขาด:
             { "isWaste": boolean, "objectName": string, "category": "อินทรีย์" | "รีไซเคิล" | "ทั่วไป" | "อันตราย" | "ไม่ใช่ขยะ", "binColor": string, "disposalMethods": string[], "reuse": string }`;
 
             try {
@@ -452,11 +459,23 @@
                                 response_format: { type: 'json_object' }
                             })
                         });
-                        if (!res.ok) continue;
-                        resultData = JSON.parse((await res.json()).choices[0].message.content.trim().replace(/```json|```/g, ''));
+                        
+                        if (!res.ok) {
+                            console.warn(`Model ${model} failed:`, await res.text());
+                            continue;
+                        }
+                        
+                        const jsonText = (await res.json()).choices[0].message.content.trim();
+                        // ดึงเฉพาะส่วนที่อยู่ระหว่าง {} เพื่อลบ markdown หรือคำเกริ่นของ Llama
+                        const cleanJson = jsonText.substring(jsonText.indexOf('{'), jsonText.lastIndexOf('}') + 1);
+                        resultData = JSON.parse(cleanJson);
                         break;
-                    } catch (e) { continue; }
+                    } catch (e) { 
+                        console.warn(e);
+                        continue; 
+                    }
                 }
+                
                 if (!resultData) throw new Error('ระบบ AI ขัดข้อง กรุณาลองใหม่อีกครั้ง');
                 renderResult(resultData);
             } catch (err) { showError(err.message); analyzeBtn.disabled = false; }
