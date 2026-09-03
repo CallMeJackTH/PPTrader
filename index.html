@@ -360,14 +360,31 @@
                 }
             };
 
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            let res;
+            try {
+                res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': API_KEY
+                    },
+                    body: JSON.stringify(body)
+                });
+            } catch (networkErr) {
+                // fetch เองล้มเหลว (ไม่ถึงเซิร์ฟเวอร์เลย) มักเกิดจาก: ไม่มีอินเทอร์เน็ต,
+                // เปิดไฟล์แบบ file:// แล้วโดนบล็อกโดยเบราว์เซอร์/ส่วนขยาย, หรือ CORS ผิดปกติ
+                const e = new Error('เชื่อมต่อเซิร์ฟเวอร์ Gemini ไม่ได้เลย (เช็คอินเทอร์เน็ต หรือลองเปิดผ่าน http://localhost แทนการเปิดไฟล์ตรงๆ)');
+                e.status = 0;
+                throw e;
+            }
 
             if (!res.ok) {
-                const err = new Error(`การเชื่อมต่อ API ขัดข้อง (${res.status})`);
+                let detail = '';
+                try {
+                    const errJson = await res.json();
+                    detail = errJson.error?.message || '';
+                } catch (parseErr) { /* ไม่ใช่ JSON ก็ปล่อยผ่าน แสดงแค่ status */ }
+                const err = new Error(`API ผิดพลาด (${res.status})${detail ? ': ' + detail : ''}`);
                 err.status = res.status;
                 throw err;
             }
