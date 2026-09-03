@@ -70,7 +70,7 @@
                 </div>
                 <h1 class="text-2xl font-bold tracking-wide">KayaScan</h1>
             </div>
-            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ (DeepSeek Vision)</p>
+            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ (Groq Vision)</p>
         </header>
 
         <main class="flex-1 overflow-y-auto p-5 space-y-5 relative">
@@ -103,7 +103,7 @@
                     <span id="analyzeBtnLabel">วิเคราะห์เลย</span>
                 </button>
             </div>
-            <p class="quota-note max-w-2xl mx-auto -mt-2">ภาพซ้ำจะดึงจากแคชโดยไม่ใช้โควต้า • มีดีเลย์ระหว่างการเรียกเพื่อกันโควต้าหมด</p>
+            <p class="quota-note max-w-2xl mx-auto -mt-2">ภาพซ้ำจะดึงจากแคชโดยไม่ใช้โควต้า • ฟรี 1,000 ครั้ง/วัน รีเซ็ตทุก 24 ชม.</p>
 
             <div id="errorBox" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl text-sm max-w-2xl mx-auto flex gap-2 items-start animate-fade-in">
                 <span id="errorText"></span>
@@ -111,7 +111,7 @@
 
             <div id="loader" class="hidden flex-col items-center justify-center py-8 animate-fade-in max-w-2xl mx-auto">
                 <div class="spinner mb-4"></div>
-                <p class="text-emerald-700 font-medium">กำลังใช้ DeepSeek AI วิเคราะห์ภาพ...</p>
+                <p class="text-emerald-700 font-medium">กำลังใช้ Groq AI วิเคราะห์ภาพ...</p>
             </div>
 
             <div id="resultArea" class="hidden space-y-4 pb-6 animate-slide-up max-w-2xl mx-auto"></div>
@@ -141,22 +141,26 @@
 
     <script>
         // ========================================================================
-        // การตั้งค่า API — DeepSeek, OpenAI-compatible Chat Completions
-        // ใช้ deepseek-v4-flash-vision-exp (โมเดลรองรับภาพรุ่นทดลอง — โมเดลหลัก
-        // deepseek-chat/deepseek-reasoner ไม่รองรับภาพ ต้องใช้ตัวนี้เท่านั้น)
-        // ภาพแต่ละรูปถูกจำกัดที่ 384 token คงที่โดยอัตโนมัติจากฝั่ง DeepSeek อยู่แล้ว
+        // การตั้งค่า API — Groq, OpenAI-compatible Chat Completions (ฟรี)
+        // ใช้ qwen/qwen3.6-27b โมเดล vision ตัวหลักบน Groq free tier รองรับภาพ
+        // + text พร้อม JSON mode ในตัว
+        // Free tier ของโมเดลนี้: 30 requests/นาที, 1,000 requests/วัน (RPD)
+        // โควต้ารีเซ็ตทุก 24 ชม. โดยอัตโนมัติ — ไม่มีค่าใช้จ่าย ไม่ต้องผูกบัตร
+        // ขนาดภาพไม่กระทบจำนวน token (คิดคงที่ 2048 token/ภาพ) แต่ยังจำกัด
+        // ไฟล์ไม่เกิน 20MB/ภาพ และส่งได้สูงสุด 5 ภาพ/คำขอ (ที่นี่ใช้ 1 ภาพ)
         // ========================================================================
-        const API_KEY = "sk-1bad17a751ed4ac8b287cada205a0fa5";
-        const MODEL = "deepseek-v4-flash-vision-exp";
-        const BASE_URL = "https://api.deepseek.com";
+        const API_KEY = "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";
+        const MODEL = "qwen/qwen3.6-27b";
+        const BASE_URL = "https://api.groq.com/openai/v1";
         const API_URL = `${BASE_URL}/chat/completions`;
 
-        const MAX_IMAGE_DIM = 384;
+        const MAX_IMAGE_DIM = 768;
         const JPEG_QUALITY = 0.82;
 
-        // จำกัดจำนวนคำขอ/นาทีฝั่ง client แบบระมัดระวัง (ปรับได้ตาม rate limit จริง
-        // ที่แสดงใน DeepSeek Platform Console)
-        const MIN_INTERVAL_MS = 13000;
+        // จำกัดจำนวนคำขอฝั่ง client แบบระมัดระวัง — Groq free tier ให้ 30
+        // requests/นาที (เกินพอสำหรับ 3 วิ/ครั้ง) แต่เพดานจริงต่อวันคือ 1,000
+        // requests ดังนั้นดีเลย์นี้กันไม่ให้กดรัวจนชน RPM เฉยๆ ไม่ได้กันโควต้า/วันหมด
+        const MIN_INTERVAL_MS = 3000;
         const RATE_LIMIT_BACKOFF_MS = 60000;
         const LS_LAST_REQUEST_KEY = "kayascan_last_request_ts";
         const LS_CACHE_PREFIX = "kayascan_cache_";
@@ -232,8 +236,9 @@
             errorBox.classList.add('hidden');
             analyzeBtn.disabled = true;
 
-            // ย่อภาพให้ทั้งสองด้าน <= 384px เพื่อให้ Gemini คิด token คงที่แค่ 258
-            // ต่อภาพ (tile เดียว) แทนที่จะถูกตัดเป็นหลาย tile ซึ่งแพงกว่าหลายเท่า
+            // ย่อภาพให้ทั้งสองด้าน <= 768px เพื่อลดขนาดไฟล์/เวลาอัปโหลด
+            // (Groq คิด token คงที่ 2048 ต่อภาพเสมอไม่ว่าความละเอียดเท่าไหร่
+            // แต่ไฟล์เล็กลงยังช่วยให้ส่งไว ประหยัด bandwidth บนมือถือ)
             const reader = new FileReader();
             reader.onload = e => {
                 const img = new Image();
@@ -320,8 +325,8 @@
             cooldownTimer = setInterval(tick, 1000);
         }
 
-        // ---------------- เรียก DeepSeek API ----------------
-        async function callDeepSeek(b64, mime) {
+        // ---------------- เรียก Groq API ----------------
+        async function callGroq(b64, mime) {
             const body = {
                 model: MODEL,
                 messages: [
@@ -334,9 +339,15 @@
                         ]
                     }
                 ],
-                max_tokens: 250,
+                max_completion_tokens: 250,
                 temperature: 0.1,
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                // qwen3.6-27b เปิด "thinking mode" เป็นค่าเริ่มต้น ซึ่งจะแทรก
+                // ข้อความ <think>...</think> มาก่อน JSON แล้วทำให้ parse พัง
+                // reasoning_effort: "none" ปิดโหมดคิดยาวเพื่อความไวและ JSON สะอาด
+                // reasoning_format: "hidden" กันเผื่อ (ตัดข้อความ reasoning ที่หลุดออกมา)
+                reasoning_effort: "none",
+                reasoning_format: "hidden"
             };
 
             let res;
@@ -352,7 +363,7 @@
             } catch (networkErr) {
                 // fetch เองล้มเหลว (ไม่ถึงเซิร์ฟเวอร์เลย) มักเกิดจาก: ไม่มีอินเทอร์เน็ต,
                 // เปิดไฟล์แบบ file:// แล้วโดนบล็อกโดยเบราว์เซอร์/ส่วนขยาย, หรือ CORS ผิดปกติ
-                const e = new Error('เชื่อมต่อเซิร์ฟเวอร์ DeepSeek ไม่ได้เลย (เช็คอินเทอร์เน็ต หรือลองเปิดผ่าน http://localhost แทนการเปิดไฟล์ตรงๆ)');
+                const e = new Error('เชื่อมต่อเซิร์ฟเวอร์ Groq ไม่ได้เลย (เช็คอินเทอร์เน็ต หรือลองเปิดผ่าน http://localhost แทนการเปิดไฟล์ตรงๆ)');
                 e.status = 0;
                 throw e;
             }
@@ -401,7 +412,7 @@
 
             try {
                 setLastRequestTs(Date.now());
-                const result = await callDeepSeek(base64Image, imageMimeType);
+                const result = await callGroq(base64Image, imageMimeType);
                 setCachedResult(cacheKey, result);
                 renderResult(result, false);
                 updateAnalyzeButtonState();
