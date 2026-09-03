@@ -70,7 +70,7 @@
                 </div>
                 <h1 class="text-2xl font-bold tracking-wide">KayaScan</h1>
             </div>
-            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ (Gemini • โหมดประหยัดโควต้า)</p>
+            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ (DeepSeek Vision)</p>
         </header>
 
         <main class="flex-1 overflow-y-auto p-5 space-y-5 relative">
@@ -111,7 +111,7 @@
 
             <div id="loader" class="hidden flex-col items-center justify-center py-8 animate-fade-in max-w-2xl mx-auto">
                 <div class="spinner mb-4"></div>
-                <p class="text-emerald-700 font-medium">กำลังใช้ Gemini AI วิเคราะห์ภาพ...</p>
+                <p class="text-emerald-700 font-medium">กำลังใช้ DeepSeek AI วิเคราะห์ภาพ...</p>
             </div>
 
             <div id="resultArea" class="hidden space-y-4 pb-6 animate-slide-up max-w-2xl mx-auto"></div>
@@ -141,45 +141,28 @@
 
     <script>
         // ========================================================================
-        // การตั้งค่า API
-        // ใช้ Gemini 2.5 Flash + ปิดโหมด "thinking" (thinkingBudget: 0) เพื่อลด
-        // token ที่ใช้ต่อคำขอลงอย่างมาก (thinking เปิดโดย default และกิน token เพิ่ม)
+        // การตั้งค่า API — DeepSeek, OpenAI-compatible Chat Completions
+        // ใช้ deepseek-v4-flash-vision-exp (โมเดลรองรับภาพรุ่นทดลอง — โมเดลหลัก
+        // deepseek-chat/deepseek-reasoner ไม่รองรับภาพ ต้องใช้ตัวนี้เท่านั้น)
+        // ภาพแต่ละรูปถูกจำกัดที่ 384 token คงที่โดยอัตโนมัติจากฝั่ง DeepSeek อยู่แล้ว
         // ========================================================================
-        const API_KEY = "AQ.Ab8RN6J6ubVmT60Q2tKjix2m7Z7_Imq_7wJpUEeptJLhSWHghA";
-        const MODEL = "gemini-2.5-flash";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+        const API_KEY = "sk-1bad17a751ed4ac8b287cada205a0fa5";
+        const MODEL = "deepseek-v4-flash-vision-exp";
+        const BASE_URL = "https://api.deepseek.com";
+        const API_URL = `${BASE_URL}/chat/completions`;
 
-        // ภาพที่มีทั้งสองด้าน <=384px จะถูกนับเป็น "1 tile" คงที่ 258 token เท่านั้น
-        // (ถ้าเกิน 384px ในด้านใดด้านหนึ่ง Gemini จะตัดเป็นหลาย tile ๆ ละ 258 token
-        // ทำให้ต้นทุนภาพสูงขึ้นหลายเท่าโดยไม่จำเป็นสำหรับงานจำแนกประเภทขยะ)
         const MAX_IMAGE_DIM = 384;
         const JPEG_QUALITY = 0.82;
 
-        // จำกัดจำนวนคำขอ/นาทีฝั่ง client ให้สอดคล้องกับโควต้าฟรี (~5 RPM)
-        // เว้นระยะห่างขั้นต่ำระหว่างการเรียก API แต่ละครั้งเพื่อไม่ให้โควต้าหมดกะทันหัน
+        // จำกัดจำนวนคำขอ/นาทีฝั่ง client แบบระมัดระวัง (ปรับได้ตาม rate limit จริง
+        // ที่แสดงใน DeepSeek Platform Console)
         const MIN_INTERVAL_MS = 13000;
         const RATE_LIMIT_BACKOFF_MS = 60000;
         const LS_LAST_REQUEST_KEY = "kayascan_last_request_ts";
         const LS_CACHE_PREFIX = "kayascan_cache_";
 
-        const RESPONSE_SCHEMA = {
-            type: "OBJECT",
-            properties: {
-                isWaste: { type: "BOOLEAN" },
-                objectName: { type: "STRING" },
-                category: { type: "STRING", enum: ["รีไซเคิล", "อินทรีย์", "ทั่วไป", "อันตราย"] },
-                binColor: { type: "STRING" },
-                disposalMethods: {
-                    type: "ARRAY",
-                    items: { type: "STRING" },
-                    minItems: 1,
-                    maxItems: 2
-                },
-                reuse: { type: "STRING" }
-            },
-            required: ["isWaste", "objectName", "category", "binColor", "disposalMethods", "reuse"],
-            propertyOrdering: ["isWaste", "objectName", "category", "binColor", "disposalMethods", "reuse"]
-        };
+        const RESULT_FIELDS_PROMPT = `ตอบกลับเป็น JSON เท่านั้น (ห้ามมีข้อความอื่นนอกเหนือจาก JSON) ตามโครงสร้างนี้เป๊ะๆ:
+{"isWaste": true/false, "objectName": "ชื่อวัตถุ", "category": "รีไซเคิล หรือ อินทรีย์ หรือ ทั่วไป หรือ อันตราย", "binColor": "สีถังขยะ", "disposalMethods": ["ขั้นตอนสั้นๆ สูงสุด 2 ข้อ"], "reuse": "วิธีนำกลับมาใช้ใหม่แบบสั้น"}`;
 
         let base64Image = null;
         let imageMimeType = null;
@@ -337,27 +320,23 @@
             cooldownTimer = setInterval(tick, 1000);
         }
 
-        // ---------------- เรียก Gemini API ----------------
-        async function callGemini(b64, mime) {
+        // ---------------- เรียก DeepSeek API ----------------
+        async function callDeepSeek(b64, mime) {
             const body = {
-                systemInstruction: {
-                    parts: [{ text: "คุณเป็นผู้เชี่ยวชาญคัดแยกขยะในไทย ตอบเป็น JSON ตามสคีมาที่กำหนดเท่านั้น ห้ามมีข้อความอื่นนอกสคีมา ตอบให้กระชับที่สุด" }]
-                },
-                contents: [{
-                    parts: [
-                        { text: "วิเคราะห์ขยะในภาพนี้ แนะนำวิธีทิ้ง/รีไซเคิลอย่างกระชับ ไม่เกิน 2 ข้อ" },
-                        { inline_data: { mime_type: mime, data: b64 } }
-                    ]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: RESPONSE_SCHEMA,
-                    maxOutputTokens: 220,
-                    temperature: 0.1,
-                    // ปิด thinking budget เพื่อไม่ให้เสีย token กับการ "คิดในใจ" ที่ไม่จำเป็น
-                    // สำหรับงานจำแนกประเภทที่ตรงไปตรงมาแบบนี้
-                    thinkingConfig: { thinkingBudget: 0 }
-                }
+                model: MODEL,
+                messages: [
+                    { role: "system", content: "คุณเป็นผู้เชี่ยวชาญคัดแยกขยะในไทย ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกเหนือจาก JSON ตอบให้กระชับที่สุด" },
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "วิเคราะห์ขยะในภาพนี้ แนะนำวิธีทิ้ง/รีไซเคิลอย่างกระชับ\n\n" + RESULT_FIELDS_PROMPT },
+                            { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } }
+                        ]
+                    }
+                ],
+                max_tokens: 250,
+                temperature: 0.1,
+                response_format: { type: "json_object" }
             };
 
             let res;
@@ -366,14 +345,14 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-goog-api-key': API_KEY
+                        'Authorization': `Bearer ${API_KEY}`
                     },
                     body: JSON.stringify(body)
                 });
             } catch (networkErr) {
                 // fetch เองล้มเหลว (ไม่ถึงเซิร์ฟเวอร์เลย) มักเกิดจาก: ไม่มีอินเทอร์เน็ต,
                 // เปิดไฟล์แบบ file:// แล้วโดนบล็อกโดยเบราว์เซอร์/ส่วนขยาย, หรือ CORS ผิดปกติ
-                const e = new Error('เชื่อมต่อเซิร์ฟเวอร์ Gemini ไม่ได้เลย (เช็คอินเทอร์เน็ต หรือลองเปิดผ่าน http://localhost แทนการเปิดไฟล์ตรงๆ)');
+                const e = new Error('เชื่อมต่อเซิร์ฟเวอร์ DeepSeek ไม่ได้เลย (เช็คอินเทอร์เน็ต หรือลองเปิดผ่าน http://localhost แทนการเปิดไฟล์ตรงๆ)');
                 e.status = 0;
                 throw e;
             }
@@ -382,7 +361,7 @@
                 let detail = '';
                 try {
                     const errJson = await res.json();
-                    detail = errJson.error?.message || '';
+                    detail = errJson.error?.message || errJson.message || '';
                 } catch (parseErr) { /* ไม่ใช่ JSON ก็ปล่อยผ่าน แสดงแค่ status */ }
                 const err = new Error(`API ผิดพลาด (${res.status})${detail ? ': ' + detail : ''}`);
                 err.status = res.status;
@@ -390,9 +369,11 @@
             }
 
             const data = await res.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const rawText = data.choices?.[0]?.message?.content;
             if (!rawText) throw new Error("ไม่พบผลลัพธ์จาก AI");
-            return JSON.parse(rawText);
+            // กันเผื่อโมเดลห่อ JSON ด้วย ```json ... ``` ทั้งที่สั่งห้ามแล้ว
+            const cleaned = rawText.trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+            return JSON.parse(cleaned);
         }
 
         analyzeBtn.addEventListener('click', async () => {
@@ -420,7 +401,7 @@
 
             try {
                 setLastRequestTs(Date.now());
-                const result = await callGemini(base64Image, imageMimeType);
+                const result = await callDeepSeek(base64Image, imageMimeType);
                 setCachedResult(cacheKey, result);
                 renderResult(result, false);
                 updateAnalyzeButtonState();
