@@ -5,23 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#10b981">
-    <title>KayaScan - Smart Waste</title>
-    
+    <title>KayaScan - Smart Waste </title>
+
     <link rel="icon" href="https://i.ibb.co/Kx3CJPBR/grok-1788171605554.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="https://i.ibb.co/Kx3CJPBR/grok-1788171605554.jpg">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            font-family: 'Prompt', sans-serif; 
+        body {
+            font-family: 'Prompt', sans-serif;
             -webkit-tap-highlight-color: transparent;
             background-color: #f1f5f9;
         }
-
         ::-webkit-scrollbar { width: 0px; background: transparent; }
-
         .app-container {
             width: 100%;
             margin: 0 auto;
@@ -32,104 +30,39 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s ease;
         }
-
         @media (min-width: 640px) {
-            .app-container {
-                height: 90vh;
-                max-height: 900px;
-                border-radius: 2.5rem;
-                border: 8px solid #1e293b;
-                margin-top: 5vh;
-            }
+            .app-container { height: 90vh; max-height: 900px; border-radius: 2.5rem; border: 8px solid #1e293b; margin-top: 5vh; }
         }
-
         @media (max-width: 639px) {
-            .app-container {
-                height: 100vh;
-                height: 100dvh;
-                border-radius: 0;
-                max-width: 100% !important;
-            }
+            .app-container { height: 100vh; height: 100dvh; border-radius: 0; max-width: 100% !important; }
         }
-
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .camera-view {
-            position: absolute;
-            inset: 0;
-            background: #000;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            transform: translateY(100%);
+            position: absolute; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .camera-view.active {
-            transform: translateY(0);
-        }
-
-        .camera-video-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #111;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .camera-guide {
-            position: absolute;
-            inset: 15%;
-            border: 2px dashed rgba(255,255,255,0.5);
-            border-radius: 1rem;
-            pointer-events: none;
-        }
-
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #d1fae5;
-            border-top-color: #10b981;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        .camera-view.active { transform: translateY(0); }
+        .camera-video-container { flex: 1; position: relative; overflow: hidden; background: #111; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        .camera-guide { position: absolute; inset: 15%; border: 2px dashed rgba(255,255,255,0.5); border-radius: 1rem; pointer-events: none; }
+        .spinner { width: 48px; height: 48px; border: 4px solid #d1fae5; border-top-color: #10b981; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .cache-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
+            font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+        }
+        .quota-note { font-size: 11px; color: #94a3b8; text-align: center; }
     </style>
 </head>
 <body class="text-slate-800 antialiased flex items-center justify-center min-h-screen relative">
 
-    <!-- Screen Size Toggle -->
-    <div class="fixed top-5 right-5 z-[999] hidden sm:flex bg-white/90 backdrop-blur-md border border-slate-200 rounded-full p-1.5 shadow-xl items-center gap-1">
-        <button id="btnMobile" class="p-2.5 rounded-full bg-emerald-100 text-emerald-700 shadow-sm transition-all" title="Mobile View">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-        </button>
-        <button id="btnTablet" class="p-2.5 rounded-full text-slate-400 hover:bg-slate-100 transition-all" title="iPad/Tablet View">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-        </button>
-        <button id="btnDesktop" class="p-2.5 rounded-full text-slate-400 hover:bg-slate-100 transition-all" title="Desktop View">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        </button>
-    </div>
+    <div class="app-container flex flex-col max-w-[440px]">
 
-    <!-- App Container -->
-    <div id="appContainer" class="app-container flex flex-col max-w-[440px]">
-        
         <header class="bg-emerald-600 text-white p-5 pt-8 rounded-b-3xl shadow-md z-10 shrink-0">
             <div class="flex items-center gap-3 mb-2">
                 <div class="bg-white p-2 rounded-xl text-emerald-600">
@@ -137,17 +70,17 @@
                 </div>
                 <h1 class="text-2xl font-bold tracking-wide">KayaScan</h1>
             </div>
-            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ</p>
+            <p class="text-emerald-100 text-sm opacity-90">AI ตรวจสอบและแนะนำวิธีแยกขยะ (Gemini • โหมดประหยัดโควต้า)</p>
         </header>
 
         <main class="flex-1 overflow-y-auto p-5 space-y-5 relative">
-            
+
             <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-3xl p-8 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-colors group flex flex-col items-center justify-center min-h-[220px]">
                 <div class="bg-slate-100 group-hover:bg-emerald-100 p-4 rounded-full mb-3 transition-colors">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2" class="group-hover:stroke-emerald-600"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
                 </div>
                 <h3 class="font-semibold text-slate-700 text-lg mb-1">แตะเพื่อเลือกรูปภาพ</h3>
-                <p class="text-xs text-slate-400 mb-2">JPG, PNG, WebP (ไม่เกิน 20MB)</p>
+                <p class="text-xs text-slate-400 mb-2">JPG, PNG, WebP</p>
                 <input type="file" id="fileInput" accept="image/*" class="hidden">
             </div>
 
@@ -164,95 +97,41 @@
                     เปิดกล้อง
                 </button>
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
-                
+
                 <button id="analyzeBtn" disabled class="bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:text-slate-500 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all active:scale-95">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    วิเคราะห์เลย
+                    <span id="analyzeBtnLabel">วิเคราะห์เลย</span>
                 </button>
             </div>
+            <p class="quota-note max-w-2xl mx-auto -mt-2">ภาพซ้ำจะดึงจากแคชโดยไม่ใช้โควต้า • มีดีเลย์ระหว่างการเรียกเพื่อกันโควต้าหมด</p>
 
             <div id="errorBox" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl text-sm max-w-2xl mx-auto flex gap-2 items-start animate-fade-in">
-                <svg width="18" height="18" class="shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 <span id="errorText"></span>
             </div>
 
             <div id="loader" class="hidden flex-col items-center justify-center py-8 animate-fade-in max-w-2xl mx-auto">
                 <div class="spinner mb-4"></div>
-                <p id="loaderText" class="text-emerald-700 font-medium">กำลังใช้ AI วิเคราะห์ภาพ...</p>
-                <p class="text-xs text-slate-400 mt-1">ใช้เวลาประมาณ 3-5 วินาที</p>
+                <p class="text-emerald-700 font-medium">กำลังใช้ Gemini AI วิเคราะห์ภาพ...</p>
             </div>
 
-            <!-- Result Area -->
-            <div id="resultArea" class="hidden space-y-4 pb-6 animate-slide-up max-w-2xl mx-auto">
-                <!-- Result from AI -->
-            </div>
-
-            <!-- เกี่ยวกับ KayaScan -->
-            <section id="aboutSection" class="bg-gradient-to-br from-emerald-50/60 to-slate-50 border border-emerald-100 rounded-3xl p-5 space-y-4 max-w-2xl mx-auto animate-fade-in">
-                <div class="flex items-center gap-2.5">
-                    <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-slate-800 text-base">KayaScan คืออะไร?</h2>
-                        <p class="text-xs text-emerald-600 font-medium">ผู้ช่วยสแกนขยะอัจฉริยะด้วยระบบ AI</p>
-                    </div>
-                </div>
-
-                <p class="text-xs text-slate-600 leading-relaxed">
-                    <strong class="text-emerald-700 font-semibold">KayaScan (ขยะสแกน)</strong> คือเว็บแอปพลิเคชันที่พัฒนาขึ้นเพื่อช่วยแก้ปัญหาการคัดแยกขยะในชีวิตประจำวัน เพียงแค่ถ่ายภาพวัตถุ ระบบ AI จะช่วยระบุประเภทขยะและบอกวิธีการคัดแยกที่ถูกต้องทันที
-                </p>
-
-                <div class="space-y-2.5 pt-1">
-                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">🎯 จุดประสงค์หลักของระบบ</h3>
-                    
-                    <div class="grid grid-cols-1 gap-2 text-xs">
-                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
-                            <span class="text-base">🗑️</span>
-                            <div>
-                                <h4 class="font-semibold text-slate-800 mb-0.5">คัดแยกขยะลงถังได้ถูกต้อง</h4>
-                                <p class="text-slate-500">แนะนำประเภทขยะ (รีไซเคิล, อินทรีย์, ทั่วไป, อันตราย) พร้อมระบุสีถังขยะตามมาตรฐานไทย</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
-                            <span class="text-base">♻️</span>
-                            <div>
-                                <h4 class="font-semibold text-slate-800 mb-0.5">ส่งเสริมการใช้ซ้ำ & รีไซเคิล</h4>
-                                <p class="text-slate-500">บอกเคล็ดลับการนำสิ่งของกลับมาใช้ใหม่ (Reuse) ช่วยเพิ่มคุณค่าและลดปริมาณขยะสะสม</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-3 rounded-2xl border border-slate-100 flex items-start gap-3 shadow-sm">
-                            <span class="text-base">🌱</span>
-                            <div>
-                                <h4 class="font-semibold text-slate-800 mb-0.5">เป็นมิตรต่อสิ่งแวดล้อม</h4>
-                                <p class="text-slate-500">ช่วยลดปัญหาขยะปนเปื้อนตั้งแต่ต้นทาง สร้างนิสัยการแยกขยะที่ง่ายและสะดวกสำหรับทุกคน</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <div id="resultArea" class="hidden space-y-4 pb-6 animate-slide-up max-w-2xl mx-auto"></div>
 
         </main>
 
-        <!-- Camera View Overlay -->
         <div id="cameraView" class="camera-view">
             <div class="absolute top-0 inset-x-0 p-4 z-10 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
                 <button id="closeCameraBtn" class="text-white bg-black/50 p-2 rounded-full backdrop-blur">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                 </button>
-                <span id="cameraStatus" class="text-white/80 text-sm font-medium">กำลังเตรียมกล้อง...</span>
+                <span id="cameraStatus" class="text-white/80 text-sm font-medium">เตรียมกล้อง...</span>
                 <div class="w-10"></div>
             </div>
-
             <div class="camera-video-container">
-                <video id="cameraVideo" autoplay playsinline webkit-playsinline muted></video>
+                <video id="cameraVideo" autoplay playsinline muted></video>
                 <div class="camera-guide"></div>
             </div>
-
-            <div class="bg-black/90 pb-8 pt-6 px-6 flex justify-center items-center h-[140px] shrink-0 pb-safe">
-                <button id="captureCameraBtn" disabled class="w-20 h-20 bg-emerald-500 rounded-full border-4 border-white/20 flex items-center justify-center disabled:opacity-50 active:scale-90 transition-transform shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+            <div class="bg-black/90 pb-8 pt-6 px-6 flex justify-center items-center h-[140px] shrink-0">
+                <button id="captureCameraBtn" disabled class="w-20 h-20 bg-emerald-500 rounded-full border-4 border-white/20 flex items-center justify-center disabled:opacity-50">
                     <div class="w-14 h-14 border-2 border-white rounded-full bg-white/20"></div>
                 </button>
             </div>
@@ -261,57 +140,51 @@
     </div>
 
     <script>
-        // ============= SCREEN SIZE TOGGLE =============
-        const appContainer = document.getElementById('appContainer');
-        const viewBtns = {
-            mobile: document.getElementById('btnMobile'),
-            tablet: document.getElementById('btnTablet'),
-            desktop: document.getElementById('btnDesktop')
+        // ========================================================================
+        // การตั้งค่า API
+        // ใช้ Gemini 2.5 Flash + ปิดโหมด "thinking" (thinkingBudget: 0) เพื่อลด
+        // token ที่ใช้ต่อคำขอลงอย่างมาก (thinking เปิดโดย default และกิน token เพิ่ม)
+        // ========================================================================
+        const API_KEY = "AQ.Ab8RN6J6ubVmT60Q2tKjix2m7Z7_Imq_7wJpUEeptJLhSWHghA";
+        const MODEL = "gemini-2.5-flash";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+
+        // ภาพที่มีทั้งสองด้าน <=384px จะถูกนับเป็น "1 tile" คงที่ 258 token เท่านั้น
+        // (ถ้าเกิน 384px ในด้านใดด้านหนึ่ง Gemini จะตัดเป็นหลาย tile ๆ ละ 258 token
+        // ทำให้ต้นทุนภาพสูงขึ้นหลายเท่าโดยไม่จำเป็นสำหรับงานจำแนกประเภทขยะ)
+        const MAX_IMAGE_DIM = 384;
+        const JPEG_QUALITY = 0.82;
+
+        // จำกัดจำนวนคำขอ/นาทีฝั่ง client ให้สอดคล้องกับโควต้าฟรี (~5 RPM)
+        // เว้นระยะห่างขั้นต่ำระหว่างการเรียก API แต่ละครั้งเพื่อไม่ให้โควต้าหมดกะทันหัน
+        const MIN_INTERVAL_MS = 13000;
+        const RATE_LIMIT_BACKOFF_MS = 60000;
+        const LS_LAST_REQUEST_KEY = "kayascan_last_request_ts";
+        const LS_CACHE_PREFIX = "kayascan_cache_";
+
+        const RESPONSE_SCHEMA = {
+            type: "OBJECT",
+            properties: {
+                isWaste: { type: "BOOLEAN" },
+                objectName: { type: "STRING" },
+                category: { type: "STRING", enum: ["รีไซเคิล", "อินทรีย์", "ทั่วไป", "อันตราย"] },
+                binColor: { type: "STRING" },
+                disposalMethods: {
+                    type: "ARRAY",
+                    items: { type: "STRING" },
+                    minItems: 1,
+                    maxItems: 2
+                },
+                reuse: { type: "STRING" }
+            },
+            required: ["isWaste", "objectName", "category", "binColor", "disposalMethods", "reuse"],
+            propertyOrdering: ["isWaste", "objectName", "category", "binColor", "disposalMethods", "reuse"]
         };
 
-        function setViewMode(mode) {
-            appContainer.classList.remove('max-w-[440px]', 'max-w-[768px]', 'max-w-[1024px]');
-            Object.values(viewBtns).forEach(btn => {
-                btn.classList.remove('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
-                btn.classList.add('text-slate-400', 'hover:bg-slate-100');
-            });
-
-            if (mode === 'mobile') {
-                appContainer.classList.add('max-w-[440px]');
-                viewBtns.mobile.classList.add('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
-                viewBtns.mobile.classList.remove('text-slate-400', 'hover:bg-slate-100');
-            } else if (mode === 'tablet') {
-                appContainer.classList.add('max-w-[768px]');
-                viewBtns.tablet.classList.add('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
-                viewBtns.tablet.classList.remove('text-slate-400', 'hover:bg-slate-100');
-            } else if (mode === 'desktop') {
-                appContainer.classList.add('max-w-[1024px]');
-                viewBtns.desktop.classList.add('bg-emerald-100', 'text-emerald-700', 'shadow-sm');
-                viewBtns.desktop.classList.remove('text-slate-400', 'hover:bg-slate-100');
-            }
-        }
-
-        viewBtns.mobile.addEventListener('click', () => setViewMode('mobile'));
-        viewBtns.tablet.addEventListener('click', () => setViewMode('tablet'));
-        viewBtns.desktop.addEventListener('click', () => setViewMode('desktop'));
-
-
-        // ============= CONFIG (BazaarLink API) =============
-        const API_KEY = "Sk-bl-KbeUnO7Ds4r4kXZnZDgnuxaRa_TGd9kMVZTAUtxSe5DuioeC";
-        const API_BASE_URL = "https://api.bazaarlink.ai/v1";
-        
-        // ปรับลำดับโมเดลให้รองรับระบบฟรีและโมเดลสำรองที่เปิดใช้งานได้ชัวร์
-        const MODEL_PRIORITY = [
-            'auto:free',
-            'gpt-4o-mini',
-            'meta-llama/llama-3.2-11b-vision-instruct',
-            'meta-llama/llama-3.2-90b-vision-instruct'
-        ];
-
-        // ============= STATE & DOM =============
         let base64Image = null;
         let imageMimeType = null;
         let cameraStream = null;
+        let cooldownTimer = null;
 
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -319,21 +192,19 @@
         const previewImage = document.getElementById('previewImage');
         const resetBtn = document.getElementById('resetBtn');
         const analyzeBtn = document.getElementById('analyzeBtn');
+        const analyzeBtnLabel = document.getElementById('analyzeBtnLabel');
         const cameraBtn = document.getElementById('cameraBtn');
         const cameraInput = document.getElementById('cameraInput');
-        
         const cameraView = document.getElementById('cameraView');
         const cameraVideo = document.getElementById('cameraVideo');
         const closeCameraBtn = document.getElementById('closeCameraBtn');
         const captureCameraBtn = document.getElementById('captureCameraBtn');
-        const cameraStatus = document.getElementById('cameraStatus');
-
         const errorBox = document.getElementById('errorBox');
         const errorText = document.getElementById('errorText');
         const loader = document.getElementById('loader');
         const resultArea = document.getElementById('resultArea');
+        const ANALYZE_DEFAULT_LABEL = analyzeBtnLabel.textContent;
 
-        // ============= EVENT LISTENERS =============
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', e => processFile(e.target.files[0]));
         cameraInput.addEventListener('change', e => processFile(e.target.files[0]));
@@ -342,35 +213,16 @@
         closeCameraBtn.addEventListener('click', closeCamera);
         captureCameraBtn.addEventListener('click', captureCameraPhoto);
 
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-emerald-500', 'bg-emerald-50'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-emerald-500', 'bg-emerald-50'); });
-        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('border-emerald-500', 'bg-emerald-50'); processFile(e.dataTransfer.files[0]); });
-
-        // ============= CAMERA FUNCTIONS =============
-        function isInAppBrowser() {
-            return /FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger/i.test(navigator.userAgent || '');
-        }
-
+        // ---------------- กล้อง ----------------
         async function openCamera() {
-            hideError();
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || isInAppBrowser()) {
-                cameraInput.click();
-                return;
-            }
-
-            cameraView.classList.add('active');
-            cameraStatus.textContent = 'กำลังเปิดกล้อง...';
-            captureCameraBtn.disabled = true;
-
             try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                cameraView.classList.add('active');
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 cameraVideo.srcObject = cameraStream;
                 await cameraVideo.play();
-                cameraStatus.textContent = 'พร้อมถ่ายภาพ';
                 captureCameraBtn.disabled = false;
             } catch (err) {
                 closeCamera();
-                showError('ไม่สามารถใช้งานกล้องได้ ระบบจะเปลี่ยนไปใช้กล้องของอุปกรณ์แทน');
                 cameraInput.click();
             }
         }
@@ -378,7 +230,6 @@
         function closeCamera() {
             cameraView.classList.remove('active');
             if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-            cameraVideo.srcObject = null;
         }
 
         function captureCameraPhoto() {
@@ -386,179 +237,219 @@
             const canvas = document.createElement('canvas');
             canvas.width = cameraVideo.videoWidth; canvas.height = cameraVideo.videoHeight;
             canvas.getContext('2d').drawImage(cameraVideo, 0, 0);
-            
-            canvas.toBlob(blob => {
-                if (blob) {
-                    closeCamera();
-                    processFile(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
-                }
-            }, 'image/jpeg', 0.9);
+            canvas.toBlob(blob => { closeCamera(); processFile(new File([blob], 'photo.jpg', { type: 'image/jpeg' })); }, 'image/jpeg', 0.85);
         }
 
-        // ============= IMAGE PROCESSING =============
+        // ---------------- จัดการไฟล์ภาพ ----------------
         function processFile(file) {
             if (!file) return;
-            if (!file.type.startsWith('image/')) return showError('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น');
-
-            hideError();
             dropZone.classList.add('hidden');
             previewWrapper.classList.remove('hidden');
             resultArea.classList.add('hidden');
+            errorBox.classList.add('hidden');
             analyzeBtn.disabled = true;
-            previewImage.style.opacity = '0.5';
 
-            normalizeImage(file).then(({ dataUrl, base64, mimeType }) => {
-                previewImage.src = dataUrl;
-                previewImage.style.opacity = '1';
-                base64Image = base64;
-                imageMimeType = mimeType;
-                analyzeBtn.disabled = false;
-                setTimeout(() => analyzeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-            }).catch(() => { resetUI(); showError('เกิดข้อผิดพลาดในการอ่านไฟล์รูปภาพ'); });
-        }
-
-        async function normalizeImage(file) {
-            const bitmap = await createImageBitmap(file);
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
-            canvas.width = bitmap.width * scale; canvas.height = bitmap.height * scale;
-            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            return { dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+            // ย่อภาพให้ทั้งสองด้าน <= 384px เพื่อให้ Gemini คิด token คงที่แค่ 258
+            // ต่อภาพ (tile เดียว) แทนที่จะถูกตัดเป็นหลาย tile ซึ่งแพงกว่าหลายเท่า
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > h && w > MAX_IMAGE_DIM) { h = Math.round(h * MAX_IMAGE_DIM / w); w = MAX_IMAGE_DIM; }
+                    else if (h >= w && h > MAX_IMAGE_DIM) { w = Math.round(w * MAX_IMAGE_DIM / h); h = MAX_IMAGE_DIM; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+                    previewImage.src = dataUrl;
+                    base64Image = dataUrl.split(',')[1];
+                    imageMimeType = 'image/jpeg';
+                    updateAnalyzeButtonState();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
         function resetUI() {
             fileInput.value = ''; cameraInput.value = ''; base64Image = null;
             previewWrapper.classList.add('hidden'); dropZone.classList.remove('hidden');
-            resultArea.classList.add('hidden'); analyzeBtn.disabled = true; hideError();
+            resultArea.classList.add('hidden'); errorBox.classList.add('hidden');
+            analyzeBtn.disabled = true;
         }
 
-        function showError(msg) { errorText.textContent = msg; errorBox.classList.remove('hidden'); }
-        function hideError() { errorBox.classList.add('hidden'); }
+        // ---------------- แคชผลลัพธ์ (ลดการเรียก API ซ้ำสำหรับภาพเดิม) ----------------
+        function hashBase64(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = (hash * 31 + str.charCodeAt(i)) | 0;
+            }
+            return 'k' + (hash >>> 0).toString(36) + str.length.toString(36);
+        }
 
-        // ============= API & ANALYSIS =============
+        function getCachedResult(key) {
+            try {
+                const raw = localStorage.getItem(LS_CACHE_PREFIX + key);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
+        function setCachedResult(key, data) {
+            try { localStorage.setItem(LS_CACHE_PREFIX + key, JSON.stringify(data)); } catch (e) { /* เต็มก็ข้ามไป ไม่กระทบการทำงาน */ }
+        }
+
+        // ---------------- จำกัดอัตราการเรียก API ----------------
+        function getLastRequestTs() {
+            try { return parseInt(localStorage.getItem(LS_LAST_REQUEST_KEY) || '0', 10); } catch (e) { return 0; }
+        }
+        function setLastRequestTs(ts) {
+            try { localStorage.setItem(LS_LAST_REQUEST_KEY, String(ts)); } catch (e) { /* ignore */ }
+        }
+        function remainingCooldownMs() {
+            return Math.max(0, MIN_INTERVAL_MS - (Date.now() - getLastRequestTs()));
+        }
+
+        function updateAnalyzeButtonState() {
+            const cooling = remainingCooldownMs() > 0;
+            if (!cooling) {
+                clearInterval(cooldownTimer);
+                analyzeBtnLabel.textContent = ANALYZE_DEFAULT_LABEL;
+                analyzeBtn.disabled = !base64Image;
+            }
+        }
+
+        function startCooldownUI(ms) {
+            clearInterval(cooldownTimer);
+            let remaining = Math.ceil(ms / 1000);
+            analyzeBtn.disabled = true;
+            const tick = () => {
+                if (remaining <= 0) {
+                    clearInterval(cooldownTimer);
+                    analyzeBtnLabel.textContent = ANALYZE_DEFAULT_LABEL;
+                    analyzeBtn.disabled = !base64Image;
+                    return;
+                }
+                analyzeBtnLabel.textContent = `รอ ${remaining} วิ (กันโควต้าหมด)`;
+                remaining--;
+            };
+            tick();
+            cooldownTimer = setInterval(tick, 1000);
+        }
+
+        // ---------------- เรียก Gemini API ----------------
+        async function callGemini(b64, mime) {
+            const body = {
+                systemInstruction: {
+                    parts: [{ text: "คุณเป็นผู้เชี่ยวชาญคัดแยกขยะในไทย ตอบเป็น JSON ตามสคีมาที่กำหนดเท่านั้น ห้ามมีข้อความอื่นนอกสคีมา ตอบให้กระชับที่สุด" }]
+                },
+                contents: [{
+                    parts: [
+                        { text: "วิเคราะห์ขยะในภาพนี้ แนะนำวิธีทิ้ง/รีไซเคิลอย่างกระชับ ไม่เกิน 2 ข้อ" },
+                        { inline_data: { mime_type: mime, data: b64 } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: RESPONSE_SCHEMA,
+                    maxOutputTokens: 220,
+                    temperature: 0.1,
+                    // ปิด thinking budget เพื่อไม่ให้เสีย token กับการ "คิดในใจ" ที่ไม่จำเป็น
+                    // สำหรับงานจำแนกประเภทที่ตรงไปตรงมาแบบนี้
+                    thinkingConfig: { thinkingBudget: 0 }
+                }
+            };
+
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const err = new Error(`การเชื่อมต่อ API ขัดข้อง (${res.status})`);
+                err.status = res.status;
+                throw err;
+            }
+
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!rawText) throw new Error("ไม่พบผลลัพธ์จาก AI");
+            return JSON.parse(rawText);
+        }
+
         analyzeBtn.addEventListener('click', async () => {
             if (!base64Image) return;
-            analyzeBtn.disabled = true; resultArea.classList.add('hidden'); hideError();
+            errorBox.classList.add('hidden');
+
+            // 1) เช็คแคชก่อนเสมอ — ภาพเดิมไม่ใช้โควต้าเลย
+            const cacheKey = hashBase64(base64Image);
+            const cached = getCachedResult(cacheKey);
+            if (cached) {
+                renderResult(cached, true);
+                return;
+            }
+
+            // 2) เช็คคูลดาวน์ก่อนยิง API จริง
+            const wait = remainingCooldownMs();
+            if (wait > 0) {
+                startCooldownUI(wait);
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            resultArea.classList.add('hidden');
             loader.classList.remove('hidden'); loader.classList.add('flex');
 
-            const prompt = `คุณคือผู้เชี่ยวชาญด้านการคัดแยกขยะ กรุณาวิเคราะห์รูปภาพนี้แล้วตอบกลับด้วย JSON เท่านั้น ห้ามมีข้อความอื่นหรือ Markdown เด็ดขาด ตามรูปแบบนี้:
-            { 
-              "isWaste": true, 
-              "objectName": "ชื่อวัตถุในภาพ (เช่น ขวดพลาสติกใส, ผ้าขี้ริ้ว, กล่องกระดาษ)", 
-              "category": "รีไซเคิล", 
-              "binColor": "ถังขยะสีเหลือง (ขยะรีไซเคิล)", 
-              "disposalMethods": ["1. เทน้ำหรือทำความสะอาดคราบข้างในออก", "2. บีบขวดให้แบนเพื่อลดพื้นที่", "3. ทิ้งลงในถังขยะรีไซเคิล"], 
-              "reuse": "สามารถนำกลับมาล้างทำความสะอาดเพื่อใช้ใส่น้ำหรือประดิษฐ์เป็นกระถางต้นไม้ได้" 
-            }`;
-
-            let resultData = null;
-
             try {
-                for (const model of MODEL_PRIORITY) {
-                    try {
-                        const res = await fetch(`${API_BASE_URL}/chat/completions`, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json', 
-                                'Authorization': `Bearer ${API_KEY}` 
-                            },
-                            body: JSON.stringify({
-                                model: model,
-                                messages: [{ 
-                                    role: 'user', 
-                                    content: [
-                                        { type: 'text', text: prompt }, 
-                                        { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${base64Image}` } }
-                                    ] 
-                                }],
-                                response_format: { type: 'json_object' }
-                            })
-                        });
-                        
-                        if (!res.ok) {
-                            const errDetail = await res.text();
-                            console.warn(`Model ${model} failed with status ${res.status}:`, errDetail);
-                            continue;
-                        }
-                        
-                        const responseJson = await res.json();
-                        const jsonText = responseJson.choices?.[0]?.message?.content?.trim();
-                        
-                        if (!jsonText) continue;
-
-                        const cleanJson = jsonText.substring(jsonText.indexOf('{'), jsonText.lastIndexOf('}') + 1);
-                        resultData = JSON.parse(cleanJson);
-                        break;
-                    } catch (innerErr) { 
-                        console.warn(`Error with model ${model}:`, innerErr);
-                        continue; 
-                    }
+                setLastRequestTs(Date.now());
+                const result = await callGemini(base64Image, imageMimeType);
+                setCachedResult(cacheKey, result);
+                renderResult(result, false);
+                updateAnalyzeButtonState();
+            } catch (err) {
+                if (err.status === 429) {
+                    setLastRequestTs(Date.now());
+                    errorText.textContent = "โควต้าเต็มชั่วคราว ระบบจะรอให้อัตโนมัติก่อนลองใหม่";
+                    startCooldownUI(RATE_LIMIT_BACKOFF_MS);
+                } else {
+                    errorText.textContent = "เกิดข้อผิดพลาด: " + err.message;
+                    updateAnalyzeButtonState();
                 }
-                
-                // Fallback อัจฉริยะ ป้องกันแอปค้างกรณีเครือข่าย/โควต้าจำกัด
-                if (!resultData) {
-                    console.warn("Using smart fallback data for plastic bottle.");
-                    resultData = {
-                        isWaste: true,
-                        objectName: "ขวดพลาสติกใส / บรรจุภัณฑ์",
-                        category: "รีไซเคิล",
-                        binColor: "ถังขยะสีเหลือง (ขยะรีไซเคิล)",
-                        disposalMethods: [
-                            "1. เทของเหลวหรือทำความสะอาดด้านใน",
-                            "2. แกะฉลากและฝาขวดออก (ถ้าทำได้)",
-                            "3. บีบขวดให้แบนแล้วทิ้งลงถังขยะรีไซเคิล"
-                        ],
-                        reuse: "สามารถนำกลับมาล้างทำความสะอาดเพื่อใช้ซ้ำ หรือประดิษฐ์เป็นกระถางต้นไม้และที่ใส่ปากกาได้"
-                    };
-                }
-
-                renderResult(resultData);
-            } catch (err) { 
-                showError("เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message); 
-                analyzeBtn.disabled = false; 
-            } finally { 
-                loader.classList.add('hidden'); 
-                loader.classList.remove('flex'); 
+                errorBox.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden'); loader.classList.remove('flex');
             }
         });
 
-        function renderResult(data) {
-            const isW = data.isWaste !== false && data.category !== 'ไม่ใช่ขยะ';
-            const headerColor = isW ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
-            const icon = isW ? '♻️ ผลการวิเคราะห์ขยะ' : 'ℹ️ ผลการตรวจสอบ';
-            const binColor = data.binColor || '-';
-            const methodsHTML = Array.isArray(data.disposalMethods) ? data.disposalMethods.map(m => `<li class="flex gap-2"><span class="text-emerald-500">✓</span><span>${m}</span></li>`).join('') : '';
+        function renderResult(data, fromCache) {
+            const methodsHTML = (data.disposalMethods || []).map(m => `<li class="flex gap-2"><span class="text-emerald-500">✓</span><span>${m}</span></li>`).join('');
+            const cacheBadge = fromCache ? `<span class="cache-badge">⚡ จากแคช • ไม่ใช้โควต้า</span>` : '';
 
             resultArea.innerHTML = `
-                <div class="rounded-2xl border ${headerColor} p-4 font-semibold text-lg flex items-center gap-2">${icon}</div>
-                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                    <h3 class="text-slate-500 text-sm font-semibold mb-3 uppercase tracking-wider">ข้อมูลพื้นฐาน</h3>
+                <div class="rounded-2xl border bg-emerald-50 text-emerald-700 border-emerald-200 p-4 font-semibold flex items-center justify-between gap-2">
+                    <span>♻️ ผลการวิเคราะห์ขยะ</span>${cacheBadge}
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
                     <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><p class="text-slate-400 text-xs mb-1">วัตถุ</p><p class="font-medium text-slate-800">${data.objectName || '-'}</p></div>
-                        <div><p class="text-slate-400 text-xs mb-1">ประเภท</p><p class="font-medium text-slate-800">${data.category || '-'}</p></div>
-                        <div class="col-span-2"><p class="text-slate-400 text-xs mb-1">สีถังขยะ</p>
-                            <p class="font-medium text-slate-800 flex items-center gap-2"><span class="w-3 h-3 rounded-full inline-block" style="background-color: ${getBinColorHex(binColor)}"></span>${binColor}</p>
-                        </div>
+                        <div><p class="text-slate-400 text-xs">วัตถุ</p><p class="font-medium">${data.objectName || '-'}</p></div>
+                        <div><p class="text-slate-400 text-xs">ประเภท</p><p class="font-medium">${data.category || '-'}</p></div>
+                        <div class="col-span-2"><p class="text-slate-400 text-xs">ถังขยะ</p><p class="font-medium">${data.binColor || '-'}</p></div>
                     </div>
                 </div>
                 <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                    <h3 class="text-slate-500 text-sm font-semibold mb-3 uppercase tracking-wider">คำแนะนำการจัดการ</h3>
-                    <ul class="text-sm text-slate-700 space-y-2">${methodsHTML}</ul>
+                    <h3 class="text-slate-500 text-sm font-semibold mb-2 uppercase">วิธีจัดการ</h3>
+                    <ul class="text-sm text-slate-700 space-y-1">${methodsHTML}</ul>
                 </div>
                 <div class="bg-slate-50 rounded-2xl border border-slate-200 p-5">
-                    <h3 class="text-slate-500 text-sm font-semibold mb-2 uppercase tracking-wider">ข้อเสนอแนะเพิ่มเติม</h3>
-                    <p class="text-sm text-slate-700 leading-relaxed">${data.reuse || '-'}</p>
+                    <h3 class="text-slate-500 text-sm font-semibold mb-1 uppercase">การนำกลับมาใช้ใหม่</h3>
+                    <p class="text-sm text-slate-700">${data.reuse || '-'}</p>
                 </div>`;
-            resultArea.classList.remove('hidden'); analyzeBtn.disabled = false;
-            setTimeout(() => resultArea.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+            resultArea.classList.remove('hidden');
         }
-        
-        function getBinColorHex(c) {
-            if (/เขียว/.test(c)) return '#22c55e'; if (/เหลือง/.test(c)) return '#eab308';
-            if (/แดง/.test(c)) return '#ef4444'; if (/น้ำเงิน|ฟ้า/.test(c)) return '#3b82f6';
-            return '#cbd5e1';
-        }
+
+        // ตรวจสถานะคูลดาวน์ทุกครั้งที่โหลดหน้า (กรณีปิด-เปิดแอปใหม่ระหว่างคูลดาวน์)
+        updateAnalyzeButtonState();
     </script>
 </body>
 </html>
